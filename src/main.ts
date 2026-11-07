@@ -24,7 +24,7 @@ const SHIFT_PHASES = [
   { start: 70, end: 100, name: 'Stadium preparation', objective: 'Build a reliable link to Grand Stadium before the crowd arrives.', goal: 'Connect Grand Stadium to a metro line' },
   { start: 100, end: 160, name: 'Stadium arrival rush', objective: 'Carry at least five passengers into Grand Stadium.', goal: 'Deliver 5 passengers to Grand Stadium' },
   { start: 160, end: 205, name: 'Post-event return', objective: 'Move the stadium crowd back toward its destinations.', goal: 'Deliver 5 passengers from Grand Stadium' },
-  { start: 205, end: 320, name: 'Afternoon build-up', objective: 'Balance the growing return commute and reach 55 total deliveries.', goal: 'Deliver 55 passengers in total' },
+  { start: 205, end: 320, name: 'Afternoon & evening commute', objective: 'Balance the growing return commute and reach 55 total deliveries.', goal: 'Deliver 55 passengers in total' },
 ];
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
 const ctx = canvas.getContext('2d')!;

@@ -9,9 +9,20 @@ This document records the current boundaries and the order in which the original
 - `src/simulation/pathfinding.ts` owns the transit graph snapshot and shortest-route planner.
 - `src/simulation/trainMotion.ts` owns pure train-direction and next-stop calculations.
 - `src/simulation/passengerDemand.ts` owns phase-aware trip weighting and injectable weighted candidate selection.
+- `src/simulation/shiftPhases.ts` is the single source of truth for phase IDs, boundaries, mission copy and current-phase lookup.
 - `src/visuals.ts` owns the fixed Port Azure illustration and its animated river highlights.
 - `src/style.css` owns the responsive interface and loading presentation.
 - `test/` contains Node's built-in test-runner suites. The tests compile only the simulation modules they exercise into the ignored `.test-build/` directory.
+
+### Shift phase model
+
+`SHIFT_PHASES` is defined once in `src/simulation/shiftPhases.ts`.
+
+- Every phase has a stable ID, start-inclusive/end-exclusive timing, display name, objective and goal copy.
+- `getShiftPhaseIndex` and `getShiftPhase` are the only supported way for other systems to resolve the current phase from elapsed simulation time.
+- The mission HUD, event presentation, soundtrack and passenger demand all use the shared phase model.
+- The final phase remains active after its nominal end time, so a run can continue without falling into an undefined state.
+- Phase boundaries are unit-tested at the precise transition points. Demand multipliers are intentionally not tuned as part of this architecture change.
 
 ## Simulation boundaries
 

@@ -40,7 +40,7 @@ export function createRoutePlanner(
   // Cache both successful and unsuccessful searches for this network snapshot.
   const routeCache = new Map<string, readonly string[] | null>();
 
-  function findRoute(start: string, destination: string): string[] | null {
+  function findRoute(start: string, destination: string): readonly string[] | null {
     if (!adjacency.has(start) || !adjacency.has(destination)) return null;
     if (start === destination) return Object.freeze([start]);
 

@@ -1,4 +1,12 @@
-## Current release — v0.13.0 — Passenger boarding and transfers
+## Current release — v0.14.0 — Fixed-step simulation
+
+- Gameplay advances in 1/60-second simulation updates instead of applying one variable delta per rendered frame.
+- The 1x, 2x and 3x controls scale accumulated simulation time while preserving a consistent update size.
+- Long frame gaps remain capped at 50 ms, and a 12-step per-frame limit prevents excessive catch-up work.
+- The clock carries fractional time between frames and resets when a new run starts.
+- Rendering and HUD refresh remain independent; train-position interpolation is a later rendering task.
+
+## Previous release — v0.13.0 — Passenger boarding and transfers
 
 - Boarding only selects passengers whose next route edge is served by the arriving train, and available capacity is an explicit input.
 - Eligible passengers retain FIFO order.

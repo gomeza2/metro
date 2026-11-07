@@ -1,4 +1,5 @@
 import './style.css';
+import { FixedStepClock } from './simulation/fixedStepClock';
 import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
 import { directionForStation, nextStopIndex } from './simulation/trainMotion';
@@ -87,6 +88,11 @@ let soundOn = false;
 let soundStep = 0;
 let soundTimer: number | null = null;
 let hoveredStation: Station | null = null;
+const simulationClock = new FixedStepClock({
+  stepSeconds: 1 / 60,
+  maxFrameDeltaSeconds: 0.05,
+  maxStepsPerFrame: 12,
+});
 let lastFrame = 0;
 let hudClock = 0;
 let soundContext: AudioContext | null = null;
@@ -1038,6 +1044,7 @@ function restartGame(): void {
   trainSequence = 1;
   elapsed = 0;
   demandClock = 0;
+  simulationClock.reset();
   score = 0;
   credits = 28;
   stadiumArrivalsDelivered = 0;
@@ -1066,13 +1073,15 @@ function restartGame(): void {
 }
 
 function gameLoop(timestamp: number): void {
-  const rawDt = lastFrame ? Math.min((timestamp - lastFrame) / 1000, 0.05) : 0;
+  const frameDelta = lastFrame ? Math.max(0, (timestamp - lastFrame) / 1000) : 0;
   lastFrame = timestamp;
-  updateSimulation(rawDt * simulationSpeed);
+  simulationClock.advance(frameDelta, simulationSpeed, (stepSeconds) => {
+    updateSimulation(stepSeconds);
+  });
   render();
 
   // Canvas remains smooth at display refresh rate; DOM-heavy HUD work runs at ~7 Hz.
-  hudClock += rawDt;
+  hudClock += Math.min(frameDelta, 0.05);
   if (hudClock >= 0.14) {
     updateHUD();
     hudClock = 0;

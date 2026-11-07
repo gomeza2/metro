@@ -780,3 +780,108 @@ body { background:radial-gradient(ellipse at 6% 8%,rgba(174,202,174,.34),transpa
 }
 @media (max-width:360px) { .phase-preview-grid { grid-template-columns:1fr; } .phase-preview-grid article:last-child { grid-column:auto; } }
 @media (prefers-reduced-motion:reduce) { .menu-feature,.menu-play-button,.upgrade-card,.line-swatch { transition:none; } }
+
+
+/* CITYFLOW 0.9 — startup progress, optional Spotify shortcut and adaptive soundtrack */
+.loading-screen {
+  position:fixed;
+  z-index:10000;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:
+    radial-gradient(ellipse at 18% 12%,rgba(86,135,101,.38),transparent 33%),
+    radial-gradient(ellipse at 88% 82%,rgba(58,108,91,.25),transparent 32%),
+    linear-gradient(145deg,#10241d 0%,#18372b 54%,#10231d 100%);
+  opacity:1;
+  visibility:visible;
+  transition:opacity .55s ease,visibility .55s ease;
+}
+.loading-screen.is-hidden { opacity:0; visibility:hidden; pointer-events:none; }
+.loading-card {
+  width:min(100%,440px);
+  padding:clamp(24px,5vw,42px);
+  border:1px solid rgba(223,236,218,.68);
+  border-radius:20px;
+  background:linear-gradient(155deg,rgba(255,255,250,.99),rgba(239,246,235,.97));
+  box-shadow:0 30px 100px rgba(0,0,0,.3);
+}
+.loading-brand { display:flex; align-items:center; gap:11px; color:#294536; font:800 14px 'Manrope',sans-serif; letter-spacing:.13em; }
+.loading-brand .brand-mark { display:inline-flex; }
+.loading-version {
+  margin-left:auto;
+  padding:5px 8px;
+  border:1px solid #d7e3d4;
+  border-radius:5px;
+  color:#6d8872;
+  font:8px var(--mono);
+  letter-spacing:.08em;
+}
+.loading-kicker { margin:34px 0 10px; color:#7d9982; font:9px var(--mono); letter-spacing:.14em; }
+.loading-card h1 { margin:0; color:#294536; font:800 clamp(25px,5vw,34px) 'Manrope',sans-serif; letter-spacing:-.045em; }
+.loading-card h1 span { color:#d6a35c; }
+.loading-copy { margin:10px 0 30px; color:#798b7d; font-size:12px; line-height:1.7; }
+.loading-progress-meta { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:9px; }
+.loading-progress-meta span { color:#607867; font:9px var(--mono); letter-spacing:.04em; }
+.loading-progress-meta strong { color:#355c43; font:700 11px var(--mono); font-variant-numeric:tabular-nums; }
+.loading-track { height:8px; overflow:hidden; border-radius:99px; background:#dfe9dc; box-shadow:inset 0 1px 2px rgba(39,70,46,.08); }
+.loading-track i {
+  display:block;
+  width:4%;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#88aa83,#c3ad73,#6f9b7a);
+  box-shadow:0 0 16px rgba(117,157,116,.45);
+  transition:width .18s ease-out;
+}
+.loading-error { margin:14px 0 0; color:#a45142; font-size:11px; line-height:1.5; }
+.loading-retry {
+  margin-top:12px;
+  padding:9px 13px;
+  border:1px solid #b8cdb7;
+  border-radius:7px;
+  background:#edf4e9;
+  color:#365b43;
+  font:700 10px 'Manrope',sans-serif;
+  cursor:pointer;
+}
+.loading-footer { display:flex; justify-content:space-between; gap:12px; margin-top:34px; color:#9aab9b; font:7px var(--mono); letter-spacing:.08em; }
+.loading-screen.has-error .loading-track i { background:#c47a68; }
+
+.spotify-link {
+  display:inline-flex;
+  min-height:34px;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:0 10px;
+  border:1px solid #cdddc9;
+  border-radius:8px;
+  background:#f2f7ee;
+  color:#426b4d;
+  font:700 10px 'Manrope',sans-serif;
+  text-decoration:none;
+  white-space:nowrap;
+  transition:transform .18s ease,border-color .18s ease,background .18s ease;
+}
+.spotify-link:hover { transform:translateY(-1px); border-color:#9eb99e; background:#e8f1e4; }
+.spotify-link:focus-visible { outline:3px solid rgba(130,170,130,.55); outline-offset:3px; }
+.menu-spotify-link {
+  border-color:rgba(188,215,183,.22);
+  background:rgba(255,255,255,.055);
+  color:#d8e9d5;
+}
+.menu-spotify-link:hover { border-color:rgba(188,215,183,.5); background:rgba(255,255,255,.1); }
+
+@media (max-width:620px) {
+  .loading-card { padding:25px 21px; border-radius:15px; }
+  .loading-kicker { margin-top:27px; }
+  .loading-footer { margin-top:27px; font-size:6px; }
+  .menu-nav-meta { gap:7px; }
+  .menu-spotify-link,.topbar-right .spotify-link { min-width:34px; padding:0 8px; }
+  .menu-spotify-link span,.topbar-right .spotify-link span { display:none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .loading-screen,.loading-track i,.spotify-link { transition:none; }
+}

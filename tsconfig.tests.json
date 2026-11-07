@@ -10,5 +10,5 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["src/simulation/pathfinding.ts", "src/simulation/trainMotion.ts"]
+  "include": ["src/simulation/pathfinding.ts", "src/simulation/trainMotion.ts", "src/simulation/passengerDemand.ts"]
 }

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f3f2ed" />
+    <meta name="theme-color" content="#0b1716" />
     <meta name="description" content="CITYFLOW — a calm, challenging urban transit strategy game." />
     <title>CITYFLOW — Urban Transit Strategy</title>
   </head>
@@ -15,7 +15,7 @@
           <div class="loading-brand">
             <span class="brand-mark"><i></i><i></i><i></i></span>
             <span>CITYFLOW</span>
-            <span class="loading-version">0.14</span>
+            <span class="loading-version">0.15</span>
           </div>
           <p class="loading-kicker">PORT AZURE · TRANSIT CONTROL</p>
           <h1>Preparing your city<span>.</span></h1>
@@ -74,69 +74,71 @@
               <div class="menu-art-glow"></div>
               <div class="menu-map-window">
                 <div class="menu-map-header">
-                  <div><span class="menu-map-overline">CITY OVERVIEW / 001</span><strong>PORT AZURE</strong></div>
-                  <span class="menu-live"><i></i> LIVE PREVIEW</span>
+                  <div><span class="menu-map-overline">CITY OVERVIEW / 14 STATIONS</span><strong>PORT AZURE</strong></div>
+                  <span class="menu-live"><i></i> CITY MAP</span>
                 </div>
-                <svg class="menu-map-art" viewBox="0 0 720 470" role="img" aria-label="Illustrated coastal city map with four colored metro routes">
-                  <defs>
-                    <pattern id="menu-grid" width="34" height="34" patternUnits="userSpaceOnUse">
-                      <path d="M34 0H0V34" fill="none" stroke="#d7dfd5" stroke-width="1"/>
-                    </pattern>
-                    <filter id="station-shadow" x="-100%" y="-100%" width="300%" height="300%">
-                      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#456050" flood-opacity=".2"/>
-                    </filter>
-                  </defs>
-                  <rect width="720" height="470" fill="#e9eee4"/>
-                  <rect width="720" height="470" fill="url(#menu-grid)" opacity=".76"/>
-                  <path d="M535 -10 C510 72 568 116 548 189 S590 287 555 352 S561 432 612 485" fill="none" stroke="#d1e3e4" stroke-width="88"/>
-                  <path d="M535 -10 C510 72 568 116 548 189 S590 287 555 352 S561 432 612 485" fill="none" stroke="#f7faf2" stroke-width="2" stroke-dasharray="4 10" opacity=".85"/>
-                  <path d="M35 92 L210 112 L350 85 L492 106 M58 245 L215 225 L360 250 L510 226 M90 385 L260 366 L415 392 L552 365" fill="none" stroke="#cbd5ca" stroke-width="13" stroke-linecap="round"/>
-                  <path d="M35 92 L210 112 L350 85 L492 106 M58 245 L215 225 L360 250 L510 226 M90 385 L260 366 L415 392 L552 365" fill="none" stroke="#f8f9f2" stroke-width="9" stroke-linecap="round"/>
-                  <path d="M150 28 L168 160 L145 290 L190 440 M350 25 L338 145 L360 260 L340 430 M455 18 L438 150 L458 270 L445 440" fill="none" stroke="#d0d9ce" stroke-width="10" stroke-linecap="round"/>
-                  <path d="M150 28 L168 160 L145 290 L190 440 M350 25 L338 145 L360 260 L340 430 M455 18 L438 150 L458 270 L445 440" fill="none" stroke="#fafaf4" stroke-width="6" stroke-linecap="round"/>
-                  <path d="M42 42 L120 42 L120 84 L48 84Z M220 42 L292 42 L292 76 L220 76Z M248 290 L310 290 L310 345 L248 345Z M390 300 L462 300 L462 350 L390 350Z M70 300 L130 300 L130 346 L70 346Z" fill="#dce8d6" stroke="#d0decf" stroke-width="1.5"/>
-                  <path d="M58 58 L105 58 M238 58 L274 58 M266 310 L294 310 M408 320 L444 320" stroke="#b9cbb6" stroke-width="4" stroke-linecap="round"/>
-                  <g fill="#b6c9ad" opacity=".9">
-                    <circle cx="92" cy="316" r="8"/><circle cx="112" cy="332" r="6"/><circle cx="82" cy="345" r="5"/>
-                    <circle cx="273" cy="305" r="6"/><circle cx="294" cy="330" r="7"/><circle cx="432" cy="315" r="6"/>
-                  </g>
-                  <path d="M72 245 C130 228 176 215 215 225 S294 256 360 250 S438 231 510 226" fill="none" stroke="#e47762" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M150 58 C165 125 168 160 145 205 S128 312 190 385 S282 402 340 430" fill="none" stroke="#6397bf" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M210 112 C255 140 292 176 338 205 S418 238 458 270 S477 345 552 365" fill="none" stroke="#6d9c80" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M350 85 C360 143 360 190 360 250 S352 342 340 430" fill="none" stroke="#d0a04e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-                  <g class="route-flow" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="2 15">
-                    <path d="M72 245 C130 228 176 215 215 225 S294 256 360 250 S438 231 510 226"/>
-                    <path d="M150 58 C165 125 168 160 145 205 S128 312 190 385 S282 402 340 430"/>
-                    <path d="M210 112 C255 140 292 176 338 205 S418 238 458 270 S477 345 552 365"/>
-                    <path d="M350 85 C360 143 360 190 360 250 S352 342 340 430"/>
-                  </g>
-                  <g filter="url(#station-shadow)" fill="#fbfcf7" stroke-width="5">
-                    <circle cx="72" cy="245" r="10" stroke="#e47762"/><circle cx="215" cy="225" r="10" stroke="#e47762"/>
-                    <circle cx="360" cy="250" r="12" stroke="#e47762"/><circle cx="510" cy="226" r="10" stroke="#e47762"/>
-                    <circle cx="150" cy="58" r="9" stroke="#6397bf"/><circle cx="145" cy="205" r="9" stroke="#6397bf"/>
-                    <circle cx="190" cy="385" r="9" stroke="#6397bf"/><circle cx="340" cy="430" r="9" stroke="#6397bf"/>
-                    <circle cx="210" cy="112" r="9" stroke="#6d9c80"/><circle cx="338" cy="205" r="9" stroke="#6d9c80"/>
-                    <circle cx="458" cy="270" r="9" stroke="#6d9c80"/><circle cx="552" cy="365" r="9" stroke="#6d9c80"/>
-                    <circle cx="350" cy="85" r="9" stroke="#d0a04e"/><circle cx="360" cy="250" r="9" stroke="#d0a04e"/>
-                  </g>
-                  <g fill="#758a79" font-family="DM Mono, monospace" font-size="10" letter-spacing="1.3">
-                    <text x="38" y="218">OLD HARBOR</text><text x="175" y="198">CENTRAL</text><text x="376" y="237">CROSSROADS</text>
-                    <text x="476" y="202">EASTBANK</text><text x="90" y="42">WEST</text><text x="555" y="388">HILLVIEW</text>
-                    <text x="255" y="414">SOUTH PIER</text><text x="376" y="68">CAMPUS</text>
-                  </g>
-                  <g transform="translate(422 158) rotate(18)">
-                    <rect x="-19" y="-10" width="38" height="20" rx="7" fill="#fffdf7" stroke="#4e7460" stroke-width="2"/>
-                    <rect x="-10" y="-6" width="7" height="6" rx="1.5" fill="#9bb7a2"/><rect x="2" y="-6" width="7" height="6" rx="1.5" fill="#9bb7a2"/>
-                    <circle cx="-10" cy="10" r="2.5" fill="#425c4c"/><circle cx="10" cy="10" r="2.5" fill="#425c4c"/>
-                  </g>
-                  <g transform="translate(617 76)">
-                    <circle r="24" fill="#f6f7ef" stroke="#d5dfd3"/>
-                    <path d="M0 -13 L4 0 L0 13 L-4 0Z" fill="#79927b"/>
-                    <text x="0" y="37" fill="#94a296" font-family="DM Mono,monospace" font-size="9" text-anchor="middle">N</text>
-                  </g>
-                </svg>
+                <svg class="menu-map-art" viewBox="0 0 720 456" role="img" aria-label="Port Azure city map with its fourteen stations, coastline, districts and an example metro line">
+  <defs>
+    <pattern id="menu-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#cbd8cb" stroke-width="1" opacity=".48"/>
+    </pattern>
+    <filter id="menu-station-shadow" x="-100%" y="-100%" width="300%" height="300%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#425c4a" flood-opacity=".22"/>
+    </filter>
+  </defs>
+  <rect width="720" height="456" fill="#edf1e8"/>
+  <rect width="720" height="456" fill="url(#menu-grid)"/>
+  <path d="M664 -10 C642 62 664 108 648 164 S674 254 646 314 S671 405 652 466 L730 466 L730 -10Z" fill="#c5dfe0"/>
+  <path d="M664 -10 C642 62 664 108 648 164 S674 254 646 314 S671 405 652 466" fill="none" stroke="#fffefa" stroke-width="4"/>
+  <path d="M35 234 C170 220 248 252 365 234 S535 245 646 234 M30 62 L195 67 L310 86 L490 72 L628 86 M42 398 L208 388 L322 398 L493 384 L640 398" fill="none" stroke="#d6dfd5" stroke-width="15" stroke-linecap="round"/>
+  <path d="M35 234 C170 220 248 252 365 234 S535 245 646 234 M30 62 L195 67 L310 86 L490 72 L628 86 M42 398 L208 388 L322 398 L493 384 L640 398" fill="none" stroke="#fffefa" stroke-width="10" stroke-linecap="round"/>
+  <path d="M180 18 L185 140 L174 258 L190 430 M310 12 L300 150 L315 265 L304 430 M492 12 L480 145 L494 263 L484 430" fill="none" stroke="#d8e0d6" stroke-width="10" stroke-linecap="round"/>
+  <path d="M180 18 L185 140 L174 258 L190 430 M310 12 L300 150 L315 265 L304 430 M492 12 L480 145 L494 263 L484 430" fill="none" stroke="#fffefa" stroke-width="6" stroke-linecap="round"/>
+  <rect x="114" y="139" width="112" height="72" rx="18" fill="#dbe9d6" stroke="#cadbc7"/>
+  <path d="M124 191 Q165 145 215 167" fill="none" stroke="#fffefa" stroke-width="3"/>
+  <g fill="#b5cdaa"><circle cx="132" cy="160" r="6"/><circle cx="162" cy="190" r="7"/><circle cx="200" cy="153" r="6"/><circle cx="215" cy="188" r="5"/></g>
+  <rect x="535" y="330" width="84" height="61" rx="14" fill="#dce9d8" stroke="#cadbc7"/>
+  <g fill="#b5cdaa"><circle cx="549" cy="344" r="5"/><circle cx="580" cy="375" r="6"/><circle cx="604" cy="345" r="5"/></g>
+  <rect x="590" y="44" width="80" height="23" rx="6" fill="#d6ded3"/>
+  <path d="M598 55H662" stroke="#fffefa" stroke-width="2" stroke-dasharray="7 7"/>
+  <ellipse cx="624" cy="141" rx="34" ry="22" fill="#d8e4d5"/>
+  <ellipse cx="624" cy="141" rx="27" ry="16" fill="none" stroke="#fffefa" stroke-width="6"/>
+  <ellipse cx="624" cy="141" rx="18" ry="10" fill="#a9c6a6"/>
+  <rect x="450" y="104" width="54" height="49" rx="8" fill="#dfe7dc" stroke="#cbd8ca"/>
+  <rect x="458" y="112" width="38" height="33" rx="4" fill="none" stroke="#fffefa" stroke-width="3"/>
+  <rect x="470" y="119" width="14" height="19" rx="2" fill="#c5d8c1"/>
+  <path d="M87 213 Q150 119 252 78 T318 171 T234 264" fill="none" stroke="#fffefa" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M87 213 Q150 119 252 78 T318 171 T234 264" fill="none" stroke="#e47762" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M87 213 Q150 119 252 78 T318 171 T234 264" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 14" opacity=".9"/>
+  <g filter="url(#menu-station-shadow)">
+    <g fill="#fffefa" stroke="#e47762" stroke-width="4">
+      <circle cx="87" cy="213" r="9"/><circle cx="150" cy="119" r="9"/><circle cx="252" cy="78" r="9"/><circle cx="318" cy="171" r="9"/><circle cx="234" cy="264" r="9"/>
+    </g>
+    <g fill="#fffefa" stroke="#8da98f" stroke-width="3">
+      <circle cx="390" cy="267" r="8"/><circle cx="502" cy="203" r="8"/><circle cx="452" cy="102" r="8"/><circle cx="600" cy="306" r="8"/><circle cx="493" cy="366" r="8"/><circle cx="313" cy="372" r="8"/><circle cx="156" cy="354" r="8"/><circle cx="654" cy="60" r="8"/>
+    </g>
+  </g>
+  <g fill="#4b6954" font-family="ui-monospace,monospace" font-size="10" font-weight="700" letter-spacing=".8">
+    <text x="26" y="197">OLD HARBOR</text>
+    <text x="120" y="100">WEST GARDENS</text>
+    <text x="222" y="56">NORTH QUARTER</text>
+    <text x="331" y="160">MUSEUM MILE</text>
+    <text x="174" y="288">CENTRAL MARKET</text>
+    <text x="380" y="290">CIVIC SQUARE</text>
+    <text x="514" y="189">EASTBANK</text>
+    <text x="575" y="117">GRAND STADIUM</text>
+    <text x="516" y="385">RIVERSIDE CLINIC</text>
+    <text x="260" y="399">SOUTH PIER</text>
+    <text x="612" y="35">AIRFIELD</text>
+  </g>
+  <g transform="translate(682 108)">
+    <circle r="16" fill="#fffefa" stroke="#d7e1d6"/>
+    <path d="M0 -9 L3 0 L0 9 L-3 0Z" fill="#4e795a"/>
+    <text x="0" y="26" fill="#6d8874" font-family="ui-monospace,monospace" font-size="8" text-anchor="middle">N</text>
+  </g>
+</svg>
                 <div class="menu-map-legend">
-                  <span><i class="legend-coral"></i> LINE 01</span><span><i class="legend-blue"></i> LINE 02</span><span><i class="legend-green"></i> LINE 03</span><span><i class="legend-amber"></i> LINE 04</span>
+                  <span><i class="legend-coral"></i> SAMPLE SERVICE</span><span><i class="legend-green"></i> 14 STATIONS</span><span><i class="legend-blue"></i> COASTLINE</span>
                 </div>
               </div>
               <div class="map-float-card"><span class="float-icon">↗</span><span><b>A city in motion</b><small>Every connection matters.</small></span><span class="float-signal"><i></i><i></i><i></i></span></div>
@@ -193,14 +195,14 @@
 
           <section class="game-frame" aria-label="CITYFLOW game">
             <div class="map-topline">
-              <div><span class="map-live-dot"></span> NETWORK MAP <span class="map-separator">/</span> PORT AZURE</div>
+              <div><span class="map-live-dot"></span> PORT AZURE <span class="map-separator">/</span> LIVE NETWORK</div>
               <div class="map-top-actions"><span class="map-coordinates">35° 41' N&nbsp;&nbsp; 139° 41' E</span><button id="map-mode-button" class="map-mode-button" type="button" aria-pressed="false"><span class="mode-icon">⌁</span><span><b>Edit route</b><small>Tap stations to connect</small></span></button></div>
             </div>
             <div class="canvas-wrap">
               <canvas id="game-canvas" aria-label="Interactive city map. Select a line, then click stations to connect them."></canvas>
               <div id="start-hint" class="map-hint">
                 <span class="hint-number">01</span>
-                <span><strong>Start your first line</strong><small>Choose a color, then select two stations. The clock waits for your first connection.</small></span>
+                <span><strong>Start your first line</strong><small>1. Pick a line below. 2. Click at least two station dots. Your train starts automatically.</small></span>
                 <button id="dismiss-hint" type="button" aria-label="Dismiss hint">×</button>
               </div>
               <div id="game-over" class="game-over hidden">
@@ -230,14 +232,14 @@
             </div>
 
             <div class="map-footer">
-              <div class="map-legend"><span><i class="legend-station"></i> Station</span><span><i class="legend-passenger"></i> Waiting passenger</span><span><i class="legend-train"></i> Train</span></div>
-              <div id="map-status" class="map-status">AWAITING FIRST CONNECTION</div>
+              <div class="map-legend"><span><i class="legend-station"></i> Station</span><span><i class="legend-train"></i> Metro line</span><span><i class="legend-passenger"></i> Waiting queue</span></div>
+              <div id="map-status" class="map-status">SELECT A LINE · CONNECT TWO STATIONS</div>
             </div>
           </section>
 
           <section class="control-dock">
             <div class="dock-main">
-              <div class="dock-heading"><span class="eyebrow">YOUR LINES</span><span class="dock-note">Select a line to edit its route</span></div>
+              <div class="dock-heading"><span class="eyebrow">YOUR LINES</span><span class="dock-note">Choose a color, then connect station dots on the map</span></div>
               <div id="line-picker" class="line-picker" aria-label="Metro line selection">
                 <button class="line-swatch selected" data-line="0" type="button" aria-label="Select coral line" title="Coral line"><i style="--swatch:#e47762"></i><span>01</span></button>
                 <button class="line-swatch" data-line="1" type="button" aria-label="Select blue line" title="Blue line"><i style="--swatch:#5d92bd"></i><span>02</span></button>
@@ -252,7 +254,7 @@
           </section>
 
           <section class="upgrade-strip">
-            <div class="upgrade-title"><span class="eyebrow">NETWORK TOOLS</span><span class="coming-label">PROTOTYPE</span></div>
+            <div class="upgrade-title"><span class="eyebrow">IMPROVE YOUR SERVICE</span><span class="coming-label">PAID UPGRADES</span></div>
             <button id="capacity-button" class="upgrade-card" type="button">
               <span class="upgrade-icon">▥</span><span class="upgrade-copy"><b>Extra capacity</b><small id="capacity-state">Train capacity ×1</small></span><span class="upgrade-cost capacity-cost">$12</span>
             </button>
@@ -285,8 +287,7 @@
           </section>
 
           <section class="traffic-card">
-            <div class="panel-head"><span class="eyebrow">CITY PULSE</span><span class="pulse-time">LIVE</span></div>
-            <div class="pulse-visual" aria-hidden="true"><div class="pulse-grid"></div><svg viewBox="0 0 300 78" preserveAspectRatio="none"><path class="pulse-area" d="M0 64 L18 60 L36 63 L54 43 L72 50 L90 34 L108 42 L126 29 L144 36 L162 17 L180 29 L198 22 L216 34 L234 14 L252 23 L270 11 L300 19 L300 78 L0 78Z"/><path class="pulse-line" d="M0 64 L18 60 L36 63 L54 43 L72 50 L90 34 L108 42 L126 29 L144 36 L162 17 L180 29 L198 22 L216 34 L234 14 L252 23 L270 11 L300 19"/></svg><span class="pulse-caption">Passenger demand</span></div>
+            <div class="panel-head"><span class="eyebrow">SHIFT OVERVIEW</span><span class="pulse-time">5 PHASES</span></div>
             <div class="phase-panel"><div class="phase-heading"><span class="eyebrow">SHIFT PROGRESSION</span><span id="phase-count">PHASE 01 / 05</span></div><strong id="phase-name">Morning setup</strong><div class="phase-track"><i id="phase-progress"></i></div><small id="phase-objective">Build your first service and deliver five passengers.</small><div class="mission-goal-row"><span id="phase-goal">Deliver 5 passengers</span><span id="phase-state">IN PROGRESS</span></div><div class="mission-track"><i id="mission-progress-bar"></i></div><div class="mission-meta"><span id="mission-progress-label">0 / 5</span><span id="mission-reward">REWARD +$8</span></div></div>
             <div class="event-row"><span class="event-icon">◷</span><div><b id="event-title">Morning commute</b><small id="event-copy">The city is starting its day.</small></div><span class="event-state">ACTIVE</span></div>
           </section>

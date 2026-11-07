@@ -521,7 +521,7 @@ function drawStation(station: Station): void {
     leisure: '◇',
   };
   ctx.fillStyle = '#f6f7ed';
-  ctx.font = '700 10px Inter, "Segoe UI", sans-serif';
+  ctx.font = `700 ${10 * markerScale}px Inter, "Segoe UI", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(symbols[station.kind], station.x, station.y + .5);
@@ -607,8 +607,8 @@ function drawStation(station: Station): void {
   ctx.fillText(station.name, labelX, labelY);
   if (showQueueCount) {
     ctx.fillStyle = station.queue.length >= 10 ? '#bb6752' : '#9a7442';
-    ctx.font = '700 8px ui-monospace, monospace';
-    ctx.fillText(`${station.queue.length} WAITING`, labelX, labelY + 13);
+    ctx.font = `700 ${compactMapLayout ? 18 : 8}px ui-monospace, monospace`;
+    ctx.fillText(`${station.queue.length} WAITING`, labelX, labelY + (compactMapLayout ? 20 : 13));
   }
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';

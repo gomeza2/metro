@@ -88,6 +88,7 @@ let soundOn = false;
 let soundStep = 0;
 let soundTimer: number | null = null;
 let hoveredStation: Station | null = null;
+let compactMapLayout = false;
 const simulationClock = new FixedStepClock({
   stepSeconds: 1 / 60,
   maxFrameDeltaSeconds: 0.05,
@@ -469,7 +470,8 @@ function drawStation(station: Station): void {
     leisure: '#bd846e',
   };
   const accent = palette[station.kind];
-  const radius = connectedLines.length > 1 ? 13 : 11;
+  const markerScale = compactMapLayout ? 1.55 : 1;
+  const radius = (connectedLines.length > 1 ? 13 : 11) * markerScale;
 
   if (station.queue.length > 0 || hovered || selected || focused) {
     const glow = ctx.createRadialGradient(station.x, station.y, 5, station.x, station.y, 42);
@@ -560,9 +562,17 @@ function drawStation(station: Station): void {
     ctx.stroke();
   }
 
+  // Small screens keep the network uncluttered; the selected station name appears on focus.
+  if (compactMapLayout && !focused && !hovered && !selected) {
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    return;
+  }
+
   // Each station has a deliberate label anchor to stop names colliding with nearby nodes.
   const label = STATION_LABEL_LAYOUT[station.id] ?? { dx: 18, dy: -16, anchor: 'left' as const };
-  ctx.font = '700 12px Inter, "Segoe UI", sans-serif';
+  const labelFontSize = compactMapLayout ? 30 : 12;
+  ctx.font = `700 ${labelFontSize}px Inter, "Segoe UI", sans-serif`;
   ctx.textAlign = label.anchor;
   ctx.textBaseline = 'middle';
   const labelX = station.x + label.dx;
@@ -570,7 +580,7 @@ function drawStation(station: Station): void {
   const labelWidth = ctx.measureText(station.name).width;
   const showQueueCount = station.queue.length >= 4;
   const boxWidth = labelWidth + 18;
-  const boxHeight = showQueueCount ? 35 : 25;
+  const boxHeight = (showQueueCount ? 35 : 25) * (compactMapLayout ? 1.8 : 1);
   const boxX = label.anchor === 'left'
     ? labelX - 9
     : label.anchor === 'right'
@@ -592,7 +602,7 @@ function drawStation(station: Station): void {
   ctx.restore();
 
   ctx.fillStyle = '#294538';
-  ctx.font = '700 12px Inter, "Segoe UI", sans-serif';
+  ctx.font = `700 ${labelFontSize}px Inter, "Segoe UI", sans-serif`;
   ctx.textAlign = label.anchor;
   ctx.fillText(station.name, labelX, labelY);
   if (showQueueCount) {
@@ -664,6 +674,7 @@ function drawTrain(line: MetroLine, train: Train): void {
 
 function render(): void {
   const rect = canvas.getBoundingClientRect();
+  compactMapLayout = rect.width < 620;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const width = Math.max(1, Math.round(rect.width * dpr));
   const height = Math.max(1, Math.round(rect.height * dpr));
@@ -1080,7 +1091,8 @@ function pointerPosition(event: PointerEvent): { x: number; y: number } {
 }
 
 function findStationAt(x: number, y: number): Station | null {
-  return stations.find((station) => Math.hypot(station.x - x, station.y - y) < 24) ?? null;
+  const hitRadius = canvas.clientWidth < 620 ? 52 : 24;
+  return stations.find((station) => Math.hypot(station.x - x, station.y - y) < hitRadius) ?? null;
 }
 
 canvas.addEventListener('pointermove', (event) => {

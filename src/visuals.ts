@@ -147,6 +147,7 @@ function drawStaticCity(ctx: CanvasRenderingContext2D): void {
   }
   ctx.restore();
 
+  drawCoast(ctx);
   park(ctx, 190, 238, 185, 120);
   park(ctx, 890, 548, 145, 100);
   park(ctx, 650, 82, 94, 66);

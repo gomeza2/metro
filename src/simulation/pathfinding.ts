@@ -9,7 +9,7 @@ export type StationNode = { readonly id: string };
 export type MetroRoute = { readonly stations: readonly string[] };
 
 export interface RoutePlanner {
-  findRoute(start: string, destination: string): string[] | null;
+  findRoute(start: string, destination: string): readonly string[] | null;
 }
 
 export function createRoutePlanner(
@@ -38,22 +38,21 @@ export function createRoutePlanner(
   }
 
   // Cache both successful and unsuccessful searches for this network snapshot.
-  const routeCache = new Map<string, string[] | null>();
+  const routeCache = new Map<string, readonly string[] | null>();
 
   function findRoute(start: string, destination: string): string[] | null {
     if (!adjacency.has(start) || !adjacency.has(destination)) return null;
-    if (start === destination) return [start];
+    if (start === destination) return Object.freeze([start]);
 
     const cacheKey = JSON.stringify([start, destination]);
     if (routeCache.has(cacheKey)) {
-      const cached = routeCache.get(cacheKey);
-      return cached ? [...cached] : null;
+      return routeCache.get(cacheKey) ?? null;
     }
 
     const previous = new Map<string, string | null>([[start, null]]);
     const queue: string[] = [start];
     let head = 0;
-    let route: string[] | null = null;
+    let route: readonly string[] | null = null;
 
     // A head index avoids the repeated array shifting cost of Array.shift().
     while (head < queue.length) {
@@ -71,7 +70,7 @@ export function createRoutePlanner(
             reversed.push(cursor);
             cursor = previous.get(cursor) ?? null;
           }
-          route = reversed.reverse();
+          route = Object.freeze(reversed.reverse());
           queue.length = 0;
           break;
         }
@@ -81,7 +80,7 @@ export function createRoutePlanner(
     }
 
     routeCache.set(cacheKey, route);
-    return route ? [...route] : null;
+    return route;
   }
 
   return Object.freeze({ findRoute });

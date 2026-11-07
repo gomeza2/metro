@@ -12,7 +12,8 @@ This document records the current boundaries and the order in which the original
 - `src/simulation/shiftPhases.ts` is the single source of truth for phase IDs, boundaries, mission copy and current-phase lookup.
 - `src/simulation/passengerOperations.ts` owns pure boarding selection and arrival classification for continuing, transferring and delivered passengers.
 - `src/simulation/fixedStepClock.ts` converts variable render-frame deltas into bounded, fixed-size simulation updates.
-- `src/visuals.ts` owns the fixed Port Azure illustration and its animated river highlights.
+- `src/visuals.ts` owns the cached Port Azure city map, coastline, parks, roads, landmarks and animated water highlights.
+- `src/main.ts` draws interactive routes, station markers, deliberate station-label anchors, trains and gameplay overlays on top of the static city layer.
 - `src/style.css` owns the responsive interface and loading presentation.
 - `test/` contains Node's built-in test-runner suites. The tests compile only the simulation modules they exercise into the ignored `.test-build/` directory.
 
@@ -76,7 +77,9 @@ Train movement helpers are pure functions. They calculate the direction appropri
 
 ### Rendering
 
-Port Azure's roads, parks, trees, buildings, bridges, and landmarks do not change during a run. `drawCityOverlay` now paints this static artwork into an offscreen canvas once, then composites the cached image on later frames. Only river glints are redrawn as animated scenery. If the offscreen context cannot be created, the renderer falls back to drawing the static layer directly.
+Port Azure's roads, parks, buildings, coastline and landmarks do not change during a run. `drawCityOverlay` paints this static artwork into an offscreen canvas once, then composites the cached layer on later frames. Only water highlights are redrawn as animated scenery. If the offscreen context cannot be created, the renderer falls back to drawing the static layer directly.
+
+Interactive station markers and route segments are drawn after the city layer. Station labels use per-station anchors rather than one universal offset; this keeps names away from close neighboring stations and makes the map easier to scan. The menu overview uses the same 1200 × 760 world coordinates scaled into its SVG, so its fourteen station positions and coast geometry match the playable map.
 
 The event panel is also no longer written from the per-frame simulation update. Event presentation changes only when its phase/event key changes, during the throttled HUD refresh.
 
@@ -105,7 +108,8 @@ The GitHub Actions build workflow runs the tests first, then strict TypeScript c
 
 1. Extract the remaining simulation state and tick orchestration into a DOM-free `GameSimulation` module, using the fixed-step clock as its update boundary.
 2. Split Canvas rendering from interaction and presentation; add resize-aware backing-store management and profiling before adding more visual effects.
-3. Separate economy, events, and progression once their state contracts are clear.
-4. Add deterministic scenario tests for boarding, alighting, transfer handling, queue pressure, phase transitions, and restart behavior.
+3. Replace the static menu map's duplicated coordinate data with shared city-map metadata so future city changes cannot drift apart.
+4. Separate economy, events, and progression once their state contracts are clear.
+5. Add deterministic scenario tests for boarding, alighting, transfer handling, queue pressure, phase transitions, and restart behavior.
 
 The next steps are deliberately ordered around correctness first. New cities, campaign progression, and larger passenger populations become much safer once these boundaries are in place.

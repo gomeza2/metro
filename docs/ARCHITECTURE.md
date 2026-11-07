@@ -22,7 +22,7 @@ A `RoutePlanner` is created from the current station list and active metro lines
 - The planner uses breadth-first search, so the returned route has the fewest station-to-station edges.
 - Search results, including unreachable pairs, are cached for the lifetime of that network snapshot.
 - A route edit rebuilds the planner. It is not rebuilt for every passenger spawn.
-- A caller receives a fresh route array. Passenger progress can therefore shift its own route without mutating the shared cache.
+- The planner returns a shared, frozen route array for read-only lookups. A passenger receives its own mutable copy only when that route is assigned to it. This avoids per-candidate route-array allocation while preserving cache safety.
 - Unknown or disconnected stations return `null`.
 
 ### Train movement
@@ -37,7 +37,7 @@ The event panel is also no longer written from the per-frame simulation update. 
 
 ## Rules to preserve
 
-1. Rebuild the route planner whenever the active line topology changes.
+1. Rebuild the route planner whenever the active line topology changes, including a full game restart.
 2. Never hand a mutable cached path array directly to a passenger.
 3. Keep simulation state changes out of drawing functions.
 4. Do not let visual interpolation change station indices, train direction, passenger routes, or money.

@@ -4,6 +4,10 @@ import { createRoutePlanner } from './simulation/pathfinding';
 import { directionForStation, nextStopIndex } from './simulation/trainMotion';
 import { selectPassengerTrip, type PassengerDistrictKind, type PassengerTripCandidate } from './simulation/passengerDemand';
 import { getShiftPhase, getShiftPhaseIndex, SHIFT_PHASES } from './simulation/shiftPhases';
+import {
+  resolvePassengersAtStation,
+  selectPassengersForBoarding,
+} from './simulation/passengerOperations';
 
 type StationKind = PassengerDistrictKind;
 type Passenger = { id: number; origin: string; destination: string; route: string[] };
@@ -280,36 +284,41 @@ function spawnPassenger(): void {
 
 function boardPassengers(line: MetroLine, train: Train, station: Station): void {
   const next = nextTrainStop(line, train);
-  if (!next || train.passengers.length >= 6 * capacityLevel) return;
-  const eligible = station.queue.filter((passenger) => passenger.route[0] === station.id && passenger.route[1] === next.id);
-  const seats = 6 * capacityLevel - train.passengers.length;
-  const boarding = eligible.slice(0, seats);
-  if (!boarding.length) return;
-  const boardingIds = new Set(boarding.map((passenger) => passenger.id));
-  station.queue = station.queue.filter((passenger) => !boardingIds.has(passenger.id));
-  train.passengers.push(...boarding);
+  if (!next) return;
+
+  const availableSeats = 6 * capacityLevel - train.passengers.length;
+  const result = selectPassengersForBoarding(
+    station.queue,
+    station.id,
+    next.id,
+    availableSeats,
+  );
+  if (!result.boarding.length) return;
+
+  station.queue = result.waiting;
+  train.passengers.push(...result.boarding);
 }
 
 function arriveAtStation(line: MetroLine, train: Train, station: Station): void {
   normalizeTrainDirection(line, train);
-  const remaining: Passenger[] = [];
-  for (const passenger of train.passengers) {
-    if (passenger.route[1] === station.id) passenger.route.shift();
-    if (passenger.destination === station.id || passenger.route.length <= 1) {
-      score += 1;
-      credits += 2;
-      if (passenger.destination === 'stadium') stadiumArrivalsDelivered += 1;
-      if (passenger.origin === 'stadium' && passenger.destination === station.id) stadiumDeparturesDelivered += 1;
-      continue;
+  const next = nextTrainStop(line, train);
+  const result = resolvePassengersAtStation(
+    train.passengers,
+    station.id,
+    next?.id ?? null,
+  );
+
+  for (const passenger of result.delivered) {
+    score += 1;
+    credits += 2;
+    if (passenger.destination === 'stadium') stadiumArrivalsDelivered += 1;
+    if (passenger.origin === 'stadium' && passenger.destination === station.id) {
+      stadiumDeparturesDelivered += 1;
     }
-    const next = nextTrainStop(line, train);
-    if (next?.id !== passenger.route[1]) {
-      station.queue.push(passenger);
-      continue;
-    }
-    remaining.push(passenger);
   }
-  train.passengers = remaining;
+
+  if (result.transferring.length) station.queue.push(...result.transferring);
+  train.passengers = result.continuing;
   boardPassengers(line, train, station);
 }
 

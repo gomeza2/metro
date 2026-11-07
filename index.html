@@ -10,17 +10,41 @@
   <body class="menu-active">
     <div id="app">
 
+      <section id="loading-screen" class="loading-screen" role="status" aria-live="polite" aria-label="Loading CITYFLOW">
+        <div class="loading-card">
+          <div class="loading-brand">
+            <span class="brand-mark"><i></i><i></i><i></i></span>
+            <span>CITYFLOW</span>
+            <span class="loading-version">0.9</span>
+          </div>
+          <p class="loading-kicker">PORT AZURE · TRANSIT CONTROL</p>
+          <h1>Preparing your city<span>.</span></h1>
+          <p class="loading-copy">Connecting the network, stations and passenger routes.</p>
+          <div class="loading-progress-meta">
+            <span id="loading-status">Opening Port Azure</span>
+            <strong id="loading-percent">04%</strong>
+          </div>
+          <div id="loading-progress" class="loading-track" role="progressbar" aria-label="Game loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="4">
+            <i id="loading-bar"></i>
+          </div>
+          <p id="loading-error" class="loading-error" hidden>City startup was interrupted. Please try again.</p>
+          <button id="loading-retry" class="loading-retry" type="button" hidden>Reload game</button>
+          <div class="loading-footer"><span>BUILT FOR CLEAR THINKING</span><span>INITIALISING SYSTEMS</span></div>
+        </div>
+      </section>
+
       <section id="main-menu" class="main-menu" aria-label="CITYFLOW main menu" aria-hidden="false">
         <div class="menu-shell">
           <nav class="menu-nav" aria-label="Main navigation">
             <a class="menu-brand" href="#" aria-label="CITYFLOW home">
               <span class="brand-mark"><i></i><i></i><i></i></span>
               <span>CITYFLOW</span>
-              <span class="menu-version">0.8</span>
+              <span class="menu-version">0.9</span>
             </a>
             <div class="menu-nav-meta">
               <span class="menu-online"><i></i> PLAYABLE CITY SIMULATOR</span>
-              <button id="menu-sound-button" class="menu-sound" type="button" aria-label="Toggle ambient sound">♫ <span>Sound off</span></button>
+              <a class="spotify-link menu-spotify-link" href="https://open.spotify.com/search/electronic%20instrumental%20gaming%20music" target="_blank" rel="noopener noreferrer" aria-label="Find instrumental game music on Spotify">♫ <span>Spotify mix</span></a>
+              <button id="menu-sound-button" class="menu-sound" type="button" aria-label="Toggle original ambient soundtrack">♫ <span>Sound off</span></button>
             </div>
           </nav>
 
@@ -138,7 +162,7 @@
               <article><span>05 · 13:30+</span><b>Evening commute</b><small>Keep the whole network balanced.</small></article>
             </div>
           </section>
-          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.8.0</span></footer>
+          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.9.0</span></footer>
         </div>
       </section>
 
@@ -150,7 +174,8 @@
         </a>
         <div class="topbar-right">
           <span class="live-indicator"><i></i> LIVE CITY</span>
-          <button id="sound-button" class="icon-button" type="button" title="Toggle ambient audio" aria-label="Toggle ambient audio">♫ <span>Sound off</span></button>
+          <button id="sound-button" class="icon-button" type="button" title="Toggle original ambient soundtrack" aria-label="Toggle original ambient soundtrack">♫ <span>Sound off</span></button>
+          <a class="spotify-link" href="https://open.spotify.com/search/electronic%20instrumental%20gaming%20music" target="_blank" rel="noopener noreferrer" aria-label="Find instrumental game music on Spotify">♫ <span>Spotify</span></a>
           <button id="help-button" class="icon-button" type="button" title="How to play" aria-label="How to play">? <span>How to play</span></button>
         </div>
       </header>
@@ -293,11 +318,11 @@
             <p id="station-advice">Click any station on the map to inspect its passenger queue, serving lines, and local demand.</p>
             <p id="tip-text" class="station-event-note">Tip: one well-connected interchange can be more useful than three isolated lines.</p>
           </section>
-          <footer class="side-footer"><span>CITYFLOW <b>0.8.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
+          <footer class="side-footer"><span>CITYFLOW <b>0.9.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
         </aside>
       </main>
       <div class="bottom-credit"><span>AN ORIGINAL TRANSIT STRATEGY PROTOTYPE</span><span>PORT AZURE · BUILD 0.8.0</span></div>
     </div>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/boot.ts"></script>
   </body>
 </html>

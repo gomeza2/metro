@@ -810,6 +810,7 @@ function updateCityEvent(): void {
       title: 'Morning commute',
       copy: 'The city is starting its day.',
       state: 'ACTIVE',
+      tip: 'Tip: one well-connected interchange can be more useful than three isolated lines.',
     };
   }
 

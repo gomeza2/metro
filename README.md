@@ -99,7 +99,7 @@ The loading percentage is an estimate of startup progress, not a byte-by-byte do
 
 - Extracted shortest-path routing into `src/simulation/pathfinding.ts`.
 - Route planning now uses a snapshot of the active lines and caches route results until a route edit rebuilds that snapshot.
-- Cached paths are copied before they are handed to passengers, so passenger progress cannot mutate shared planner state.
+- The planner shares frozen cached route arrays for read-only lookups. It copies only the selected path when assigning it to a passenger, so passenger progress cannot mutate shared planner state.
 - Added Node's built-in test runner for route direction, shortest paths, disconnected stations, cyclic networks, cache isolation, and snapshot behavior. No third-party test dependency is required.
 - Moved the fixed Port Azure scenery to an offscreen canvas cache. The render loop now blits the static layer and draws only the moving river glints on top.
 - GitHub Actions runs the simulation tests before the TypeScript/Vite production build.

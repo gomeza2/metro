@@ -20,11 +20,11 @@ const WORLD_W = 1200;
 const WORLD_H = 760;
 const COLORS = ['#e47762', '#5d92bd', '#6a9c81', '#d5a14e'];
 const SHIFT_PHASES = [
-  { start: 0, end: 70, name: 'Morning setup', objective: 'Build your first service and deliver five passengers.', goal: 'Deliver 5 passengers' },
-  { start: 70, end: 100, name: 'Event preparation', objective: 'Connect Grand Stadium before the crowd arrives.', goal: 'Connect Grand Stadium to a metro line' },
-  { start: 100, end: 160, name: 'Stadium rush', objective: 'Bring at least five passengers to the stadium.', goal: 'Deliver 5 passengers to Grand Stadium' },
-  { start: 160, end: 205, name: 'Return wave', objective: 'Carry at least five passengers away from the stadium.', goal: 'Deliver 5 passengers from Grand Stadium' },
-  { start: 205, end: 320, name: 'Evening commute', objective: 'Keep the city moving and reach 55 total deliveries.', goal: 'Deliver 55 passengers in total' },
+  { start: 0, end: 70, name: 'Morning network', objective: 'Connect the first districts and establish reliable passenger service.', goal: 'Deliver 5 passengers' },
+  { start: 70, end: 100, name: 'Stadium preparation', objective: 'Build a reliable link to Grand Stadium before the crowd arrives.', goal: 'Connect Grand Stadium to a metro line' },
+  { start: 100, end: 160, name: 'Stadium arrival rush', objective: 'Carry at least five passengers into Grand Stadium.', goal: 'Deliver 5 passengers to Grand Stadium' },
+  { start: 160, end: 205, name: 'Post-event return', objective: 'Move the stadium crowd back toward its destinations.', goal: 'Deliver 5 passengers from Grand Stadium' },
+  { start: 205, end: 320, name: 'Afternoon build-up', objective: 'Balance the growing return commute and reach 55 total deliveries.', goal: 'Deliver 55 passengers in total' },
 ];
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
 const ctx = canvas.getContext('2d')!;
@@ -82,8 +82,11 @@ let gameStarted = false;
 let routeEditMode = true;
 let hintDismissed = false;
 let soundOn = false;
+let soundStep = 0;
+let soundTimer: number | null = null;
 let hoveredStation: Station | null = null;
 let lastFrame = 0;
+let hudClock = 0;
 let soundContext: AudioContext | null = null;
 let soundMaster: GainNode | null = null;
 
@@ -135,12 +138,17 @@ function shortestRoute(start: string, destination: string, network = graph()): s
   return null;
 }
 
+function normalizeTrainDirection(line: MetroLine, train: Train): void {
+  const lastIndex = line.stations.length - 1;
+  if (train.stationIndex <= 0 && train.direction === -1) train.direction = 1;
+  else if (train.stationIndex >= lastIndex && train.direction === 1) train.direction = -1;
+}
+
 function nextTrainStop(line: MetroLine, train: Train): Station | null {
   if (line.stations.length < 2) return null;
   let targetIndex = train.stationIndex + train.direction;
   if (targetIndex < 0 || targetIndex >= line.stations.length) {
-    train.direction = train.direction === 1 ? -1 : 1;
-    targetIndex = train.stationIndex + train.direction;
+    targetIndex = train.stationIndex - train.direction;
   }
   const id = line.stations[targetIndex];
   return id ? stationById(id) : null;
@@ -308,9 +316,26 @@ function spawnPassenger(): void {
     if (hour >= 11 && hour < 14 && ['commerce', 'culture', 'leisure'].includes(choice.to.kind)) weight *= 1.45;
     if (hour >= 16 && hour < 20 && ['commerce', 'culture', 'civic'].includes(choice.from.kind)) weight *= 2.2;
     if (hour >= 16 && hour < 20 && choice.to.kind === 'residential') weight *= 1.8;
-    if (elapsed >= 70 && elapsed < 100 && choice.to.id === 'stadium') weight *= 2.2;
-    if (elapsed >= 100 && elapsed < 160 && choice.to.id === 'stadium') weight *= 5.5;
-    if (elapsed >= 160 && elapsed < 205 && choice.from.id === 'stadium') weight *= 7.5;
+
+    // Each shift phase changes where trips begin and end, not just the event label.
+    if (elapsed < 70) {
+      if (choice.from.kind === 'residential') weight *= 1.8;
+      if (['commerce', 'culture', 'civic'].includes(choice.to.kind)) weight *= 1.35;
+    } else if (elapsed < 100) {
+      if (choice.to.id === 'stadium') weight *= 3.4;
+      if (choice.from.id === 'stadium') weight *= 0.12;
+    } else if (elapsed < 160) {
+      if (choice.to.id === 'stadium') weight *= 7.2;
+      if (choice.from.id === 'stadium') weight *= 0.08;
+    } else if (elapsed < 205) {
+      if (choice.from.id === 'stadium') weight *= 8.4;
+      if (choice.to.id === 'stadium') weight *= 0.08;
+      if (choice.to.kind === 'residential') weight *= 1.4;
+    } else {
+      if (choice.from.kind !== 'residential') weight *= 1.55;
+      if (choice.to.kind === 'residential') weight *= 2.1;
+      if (choice.to.id === 'stadium') weight *= 0.5;
+    }
     return { choice, weight };
   });
   const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
@@ -336,6 +361,7 @@ function boardPassengers(line: MetroLine, train: Train, station: Station): void 
 }
 
 function arriveAtStation(line: MetroLine, train: Train, station: Station): void {
+  normalizeTrainDirection(line, train);
   const remaining: Passenger[] = [];
   for (const passenger of train.passengers) {
     if (passenger.route[1] === station.id) passenger.route.shift();
@@ -371,6 +397,7 @@ function updateSimulation(dt: number): void {
   for (const line of lines) {
     if (line.stations.length < 2) continue;
     for (const train of line.trains) {
+      normalizeTrainDirection(line, train);
       if (train.dwell > 0) {
         train.dwell = Math.max(0, train.dwell - dt);
         if (train.dwell === 0) {
@@ -911,6 +938,48 @@ function togglePause(): void {
   $('#map-status').textContent = paused ? 'SIMULATION PAUSED' : 'NETWORK RUNNING';
 }
 
+const SOUNDTRACK_PHASES = [
+  { root: 196, notes: [0, 3, 5, 7, 10, 7, 5, 3], interval: 650 },
+  { root: 220, notes: [0, 2, 5, 7, 9, 7, 5, 2], interval: 560 },
+  { root: 247, notes: [0, 3, 7, 10, 7, 3, 5, 10], interval: 430 },
+  { root: 220, notes: [7, 5, 3, 0, 3, 5, 2, 0], interval: 500 },
+  { root: 196, notes: [0, 5, 7, 10, 7, 5, 3, 2], interval: 610 },
+] as const;
+
+function scheduleSoundtrackStep(): void {
+  if (!soundOn || !soundContext || !soundMaster) return;
+
+  const phaseIndex = Math.max(0, SHIFT_PHASES.findIndex((phase, index) =>
+    elapsed >= phase.start && (elapsed < phase.end || index === SHIFT_PHASES.length - 1)
+  ));
+  const mood = SOUNDTRACK_PHASES[phaseIndex] ?? SOUNDTRACK_PHASES[0];
+  const pressure = Math.max(0, Math.min(1, totalWaiting() / 34));
+  const semitone = mood.notes[soundStep % mood.notes.length] ?? 0;
+  const octaveLift = pressure > 0.72 && soundStep % 4 === 2 ? 12 : 0;
+  const frequency = mood.root * Math.pow(2, (semitone + octaveLift) / 12);
+  const now = soundContext.currentTime;
+
+  const oscillator = soundContext.createOscillator();
+  const voiceGain = soundContext.createGain();
+  const filter = soundContext.createBiquadFilter();
+  oscillator.type = pressure > 0.78 ? 'sawtooth' : 'triangle';
+  oscillator.frequency.setValueAtTime(frequency, now);
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(720 + pressure * 1050, now);
+  voiceGain.gain.setValueAtTime(0.0001, now);
+  voiceGain.gain.exponentialRampToValueAtTime(0.045 + pressure * 0.012, now + 0.025);
+  voiceGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+  oscillator.connect(filter);
+  filter.connect(voiceGain);
+  voiceGain.connect(soundMaster);
+  oscillator.start(now);
+  oscillator.stop(now + 0.4);
+
+  soundStep += 1;
+  const nextInterval = Math.max(360, mood.interval - pressure * 100);
+  soundTimer = window.setTimeout(scheduleSoundtrackStep, nextInterval);
+}
+
 function toggleSound(): void {
   if (!soundContext) {
     const AudioContextClass = window.AudioContext;
@@ -918,32 +987,49 @@ function toggleSound(): void {
       $('#sound-button').innerHTML = '♫ <span>Audio unavailable</span>';
       return;
     }
+
     soundContext = new AudioContextClass();
     soundMaster = soundContext.createGain();
     soundMaster.gain.value = 0;
     soundMaster.connect(soundContext.destination);
 
-    const notes = [110, 164.81, 220];
-    notes.forEach((frequency, index) => {
+    // A quiet original synth pad sits below the evolving eight-note CITYFLOW motif.
+    const padFrequencies = [98, 146.83, 196];
+    padFrequencies.forEach((frequency, index) => {
       const oscillator = soundContext!.createOscillator();
       const voiceGain = soundContext!.createGain();
       const filter = soundContext!.createBiquadFilter();
       oscillator.type = index === 1 ? 'triangle' : 'sine';
       oscillator.frequency.value = frequency;
       filter.type = 'lowpass';
-      filter.frequency.value = 420 + index * 110;
-      voiceGain.gain.value = index === 0 ? 0.22 : 0.11;
+      filter.frequency.value = 380 + index * 140;
+      voiceGain.gain.value = [0.14, 0.075, 0.04][index] ?? 0.04;
       oscillator.connect(filter);
       filter.connect(voiceGain);
       voiceGain.connect(soundMaster!);
       oscillator.start();
     });
   }
+
   soundOn = !soundOn;
-  if (soundOn) void soundContext.resume();
-  soundMaster!.gain.setTargetAtTime(soundOn ? 0.13 : 0, soundContext.currentTime, 0.7);
-  $('#sound-button').innerHTML = soundOn ? '♫ <span>Sound on</span>' : '♫ <span>Sound off</span>';
+  if (soundOn) {
+    void soundContext.resume();
+    soundMaster!.gain.setTargetAtTime(0.17, soundContext.currentTime, 0.7);
+    if (soundTimer !== null) window.clearTimeout(soundTimer);
+    scheduleSoundtrackStep();
+  } else {
+    if (soundTimer !== null) {
+      window.clearTimeout(soundTimer);
+      soundTimer = null;
+    }
+    soundMaster!.gain.setTargetAtTime(0, soundContext.currentTime, 0.45);
+  }
+
+  const label = soundOn ? '♫ <span>Sound on</span>' : '♫ <span>Sound off</span>';
+  $('#sound-button').innerHTML = label;
   $('#sound-button').classList.toggle('active', soundOn);
+  const menuSoundButton = document.querySelector<HTMLButtonElement>('#menu-sound-button');
+  if (menuSoundButton) menuSoundButton.innerHTML = label;
 }
 
 function restartGame(): void {
@@ -994,7 +1080,13 @@ function gameLoop(timestamp: number): void {
   lastFrame = timestamp;
   updateSimulation(rawDt * simulationSpeed);
   render();
-  updateHUD();
+
+  // Canvas remains smooth at display refresh rate; DOM-heavy HUD work runs at ~7 Hz.
+  hudClock += rawDt;
+  if (hudClock >= 0.14) {
+    updateHUD();
+    hudClock = 0;
+  }
   requestAnimationFrame(gameLoop);
 }
 
@@ -1097,3 +1189,4 @@ selectLine(0);
 updateStartHint();
 updateHUD();
 requestAnimationFrame(gameLoop);
+window.dispatchEvent(new Event('cityflow:ready'));

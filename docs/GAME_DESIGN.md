@@ -1,3 +1,12 @@
+## Current release — v0.9.0 — Better first launch, phase identity and adaptive audio
+
+- Startup progress remains visible until the TypeScript game module signals that the city, controls, and first render are ready.
+- The five phases now use distinct passenger-flow profiles: residential departures, stadium preparation, inbound stadium demand, outbound return demand, and the wider afternoon commute.
+- The optional Web Audio soundtrack uses an original synth motif whose notes and tempo respond to phase and network pressure.
+- Spotify is an optional external listening shortcut. The game does not require Spotify login, autoplay, or an external music service.
+- HUD DOM updates are throttled independently from Canvas rendering.
+- Train route lookups used by rendering are read-only; direction changes happen during simulation updates.
+
 ## Current release — v0.8.0 — Interface and phase presentation
 
 - Reworked the menu and in-game visual hierarchy for more comfortable reading and clearer actions.
@@ -90,13 +99,6 @@ Observe demand → draw or adjust routes → move passengers → detect bottlene
 - Weather and special events.
 - Map modifiers that change strategic priorities.
 
-### Future — City variety
-- Multiple maps with rivers, bridges, hills, and different station layouts.
-- Distinct district behaviors: residential, business, education, culture, health, and leisure.
-- Daily/weekly demand cycles.
-- Weather and special events.
-- Map modifiers that change strategic priorities.
-
 ### Future — Modes and progression
 - Endless score mode.
 - Curated campaign with objectives.
@@ -106,14 +108,14 @@ Observe demand → draw or adjust routes → move passengers → detect bottlene
 - Run history and local high scores.
 
 ### Future — Audio and polish
-- Original soundtrack with adaptive layers.
+- Expand the original adaptive soundtrack with more musical layers and optional intensity controls.
 - Station, vehicle, interchange, and UI sound effects.
 - Accessibility: color-safe palette, reduced motion, volume controls, clear status labels.
 - Performance profiling and device testing.
 
 ## Audio direction
 
-Build an original ambient/electronic identity. Music should be layered and adaptive: sparse at low demand, subtly more rhythmic as the city grows, and tense only when the player is under real pressure. The prototype uses Web Audio synthesis for a quiet sound bed. A later soundtrack can use commissioned or properly licensed original recordings.
+Build an original ambient/electronic identity. Music should be layered and adaptive: sparse at low demand, subtly more rhythmic as the city grows, and tense only when the player is under real pressure. The prototype now uses Web Audio synthesis for a quiet, original phase-aware synth motif. Spotify is an optional external listening shortcut; the game does not embed copyrighted tracks or rely on Spotify playback for its core audio. Later soundtrack layers can use commissioned or properly licensed original recordings.
 
 Spotify should be treated as an optional external listening destination, not a required game audio engine. The game must remain fully playable when Spotify is unavailable.
 
@@ -122,7 +124,7 @@ Spotify should be treated as an optional external listening destination, not a r
 - Vite + TypeScript.
 - Canvas 2D for the map and moving vehicles.
 - HTML/CSS for accessible interface controls.
-- Deterministic simulation updates independent from drawing.
+- Simulation state changes remain independent from rendering.
 - Shortest-path routing over a graph assembled from active line segments.
 - Local storage for settings and high scores.
 - No account system or backend until online features genuinely require them.
@@ -137,4 +139,6 @@ Spotify should be treated as an optional external listening destination, not a r
 - Route editing never corrupts passenger or train state.
 - The map remains usable at laptop and mobile widths.
 - Audio is opt-in and respects browser autoplay restrictions.
+- The loading screen stays until startup reports ready, and startup errors offer a retry.
+- The Spotify shortcut is optional and never blocks the game from starting.
 - No third-party proprietary game assets are used.

@@ -1,4 +1,12 @@
-## Current release — v0.12.0 — Unified shift phase model
+## Current release — v0.13.0 — Passenger boarding and transfers
+
+- Boarding only selects passengers whose next route edge is served by the arriving train, and available capacity is an explicit input.
+- Eligible passengers retain FIFO order.
+- At each stop, passengers are classified as continuing on the train, transferring at the station, or delivered to their destination.
+- Passenger route progress uses per-passenger copies; this prevents route mutation from leaking into cached or shared route data.
+- Economy rewards and mission counters stay in the game coordinator for now so this change preserves the existing scoring balance.
+
+## Previous release — v0.12.0 — Unified shift phase model
 
 - All five phase IDs, timing boundaries, display names, objectives and mission goals now come from one shared configuration.
 - Passenger demand, HUD missions, event presentation and the adaptive soundtrack use the same phase lookup.

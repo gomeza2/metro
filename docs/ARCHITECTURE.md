@@ -8,6 +8,7 @@ This document records the current boundaries and the order in which the original
 - `src/main.ts` is still the application composition root. It currently owns the live game state, simulation update loop, DOM interaction, HUD coordination, and Canvas render orchestration. It is smaller than before, but it is not yet a fully separated engine.
 - `src/simulation/pathfinding.ts` owns the transit graph snapshot and shortest-route planner.
 - `src/simulation/trainMotion.ts` owns pure train-direction and next-stop calculations.
+- `src/simulation/passengerDemand.ts` owns phase-aware trip weighting and injectable weighted candidate selection.
 - `src/visuals.ts` owns the fixed Port Azure illustration and its animated river highlights.
 - `src/style.css` owns the responsive interface and loading presentation.
 - `test/` contains Node's built-in test-runner suites. The tests compile only the simulation modules they exercise into the ignored `.test-build/` directory.
@@ -24,6 +25,16 @@ A `RoutePlanner` is created from the current station list and active metro lines
 - A route edit rebuilds the planner. It is not rebuilt for every passenger spawn.
 - The planner returns a shared, frozen route array for read-only lookups. A passenger receives its own mutable copy only when that route is assigned to it. This avoids per-candidate route-array allocation while preserving cache safety.
 - Unknown or disconnected stations return `null`.
+
+### Passenger demand
+
+Passenger demand selection is isolated from the game loop.
+
+- Candidates are built from connected station pairs and their cached routes.
+- A pure weighting function applies the time-of-day and five shift-phase multipliers.
+- The selector prefers origins with shorter queues when such candidates exist, then falls back to all valid candidates.
+- The random source is injectable. Tests can verify phase behavior and selection boundaries without relying on an uncontrolled random sequence.
+- The selected candidate retains its station payload; the mutable passenger route is copied only when the passenger is created.
 
 ### Train movement
 
@@ -58,7 +69,7 @@ The GitHub Actions build workflow runs the tests first, then strict TypeScript c
 
 ## Next extraction sequence
 
-1. Move passenger creation and phase-demand weighting into a testable passenger-demand system with an injectable random source.
+1. Move the remaining passenger lifecycle and boarding/alighting state into a testable passenger system.
 2. Move the simulation state and `updateSimulation` into a `GameSimulation` module that has no DOM or Canvas access.
 3. Use a fixed simulation step with an accumulator so 1x, 2x, and 3x speeds change simulation time without tying gameplay rules to the display refresh rate.
 4. Split Canvas rendering from interaction and presentation; add resize-aware backing-store management and profiling before adding more visual effects.

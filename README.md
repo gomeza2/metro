@@ -95,7 +95,7 @@ The prototype uses original code and procedurally drawn graphics/audio. No Mini 
 The loading percentage is an estimate of startup progress, not a byte-by-byte download meter. The screen only reaches 100% after the game module signals that the engine is ready.
 
 
-## Current release — v0.10.0 — Simulation and rendering foundations
+## Previous release — v0.10.0 — Simulation and rendering foundations
 
 - Extracted shortest-path routing into `src/simulation/pathfinding.ts`.
 - Route planning now uses a snapshot of the active lines and caches route results until a route edit rebuilds that snapshot.
@@ -103,3 +103,11 @@ The loading percentage is an estimate of startup progress, not a byte-by-byte do
 - Added Node's built-in test runner for route direction, shortest paths, disconnected stations, cyclic networks, cache isolation, and snapshot behavior. No third-party test dependency is required.
 - Moved the fixed Port Azure scenery to an offscreen canvas cache. The render loop now blits the static layer and draws only the moving river glints on top.
 - GitHub Actions runs the simulation tests before the TypeScript/Vite production build.
+
+
+## Current release — v0.11.0 — Passenger demand system
+
+- Extracted time-of-day and shift-phase passenger trip weighting into `src/simulation/passengerDemand.ts`.
+- Passenger demand selection now receives an injectable random source, allowing phase behavior and queue-pressure preferences to be tested deterministically.
+- Preserved the existing demand tuning while moving morning departures, stadium preparation, event arrivals, post-event returns, and late-shift residential trips out of `main.ts`.
+- Added tests for each phase, queue-pressure fallback, weighted selection, random boundaries, and empty candidate pools.

@@ -20,7 +20,7 @@ test('morning demand favors residential departures toward work and civic distric
 test('event preparation increases trips into the stadium and discourages exits', () => {
   const inbound = candidate(endpoint('civic', 'civic'), endpoint('stadium', 'leisure'));
   const outbound = candidate(endpoint('stadium', 'leisure'), endpoint('market', 'commerce'));
-  const context = { elapsed: 80, hour: 12 };
+  const context = { elapsed: 80, hour: 10 };
 
   assert.equal(passengerTripWeight(inbound, context), 3.4);
   assert.equal(passengerTripWeight(outbound, context), 0.12);
@@ -28,12 +28,12 @@ test('event preparation increases trips into the stadium and discourages exits',
 
 test('the live event creates a stronger inbound stadium pulse', () => {
   const inbound = candidate(endpoint('north', 'residential'), endpoint('stadium', 'leisure'));
-  assert.equal(passengerTripWeight(inbound, { elapsed: 120, hour: 12 }), 7.2);
+  assert.equal(passengerTripWeight(inbound, { elapsed: 120, hour: 10 }), 7.2);
 });
 
 test('the return phase favors passengers leaving the stadium for residential areas', () => {
   const returning = candidate(endpoint('stadium', 'leisure'), endpoint('east', 'residential'));
-  assert.equal(passengerTripWeight(returning, { elapsed: 180, hour: 12 }), 8.4 * 1.4);
+  assert.equal(passengerTripWeight(returning, { elapsed: 180, hour: 14 }), 8.4 * 1.4);
 });
 
 test('the late shift builds return trips toward residential districts', () => {

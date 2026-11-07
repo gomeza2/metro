@@ -1,4 +1,4 @@
-import { getShiftPhase } from './shiftPhases';
+import { getShiftPhase } from './shiftPhases.js';
 
 export type PassengerDistrictKind = 'residential' | 'commerce' | 'culture' | 'civic' | 'leisure';
 

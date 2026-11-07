@@ -113,9 +113,18 @@ The loading percentage is an estimate of startup progress, not a byte-by-byte do
 - Added tests for each phase, queue-pressure fallback, weighted selection, random boundaries, and empty candidate pools.
 
 
-## Current release — v0.12.0 — Central shift phase model
+## Previous release — v0.12.0 — Central shift phase model
 
 - Added `src/simulation/shiftPhases.ts` as the single source of truth for the five phase IDs, boundaries, names, objectives and goals.
 - The mission HUD, event panel, soundtrack and passenger-demand system now resolve the active phase through the same phase helper.
 - Kept the previous time boundaries and demand multipliers unchanged; this is a consistency and correctness refactor, not a difficulty rebalance.
 - Added seven boundary tests for inclusive/exclusive transitions, the final phase continuing beyond its nominal end, and invalid elapsed values.
+
+
+## Current release — v0.13.0 — Passenger boarding and transfer operations
+
+- Extracted boarding selection and train-arrival passenger resolution into `src/simulation/passengerOperations.ts`.
+- Boarding now uses an explicit available-seat count and preserves FIFO order among passengers whose next route edge matches the train.
+- Arrival resolution returns three clear groups: passengers continuing on the train, passengers transferring into the station queue, and passengers who completed their trip.
+- Passenger routes are advanced on fresh arrays, preserving the caller's passenger state and preventing accidental mutation of shared route data.
+- Added nine tests for capacity, eligibility, destination arrival, transfers, continuation, path advancement and mutation safety.

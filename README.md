@@ -2,6 +2,12 @@
 
 A small, original urban-transit strategy game prototype. Build metro lines, connect stations, move passengers, manage capacity, and keep the network flowing.
 
+## Current release — v0.15.0
+
+The current build focuses on clarity and playability: a redesigned high-contrast interface, a cleaner Port Azure city map, station labels positioned to avoid collisions, a matching menu-map preview, and simpler first-route instructions. The static passenger-demand illustration was removed so the interface only presents gameplay information that is actually connected to the simulation.
+
+Play the published build: https://gomeza2.github.io/metro/
+
 ## Run locally
 
 Requirements: Node.js 20 or newer.

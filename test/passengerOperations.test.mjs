@@ -85,9 +85,9 @@ test('passengers change lines when the current train does not serve their next e
   assert.deepEqual(result.delivered, []);
 });
 
-test('passengers only advance their path when the train reaches the expected station', () => {
+test('passengers do not advance their path when a different station is reached', () => {
   const item = passenger(1, 'A', 'D', ['A', 'C', 'D']);
-  const result = resolvePassengersAtStation([item], 'B', 'C');
+  const result = resolvePassengersAtStation([item], 'B', 'E');
 
   assert.deepEqual(result.continuing, []);
   assert.deepEqual(result.transferring[0]?.route, ['A', 'C', 'D']);

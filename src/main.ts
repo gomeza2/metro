@@ -166,7 +166,7 @@ function dispatchTrain(line: MetroLine): void {
 function replanWaitingPassengers(): void {
   for (const station of stations) {
     for (const passenger of station.queue) {
-      passenger.route = routePlanner.findRoute(station.id, passenger.destination) ?? [];
+      passenger.route = [...(routePlanner.findRoute(station.id, passenger.destination) ?? [])];
     }
   }
 }
@@ -253,7 +253,7 @@ function clearRoute(): void {
 }
 
 function spawnPassenger(): void {
-  const connected: Array<{ from: Station; to: Station; route: string[] }> = [];
+  const connected: Array<{ from: Station; to: Station; route: readonly string[] }> = [];
   for (const from of stations) {
     if (from.queue.length >= 16) continue;
     for (const to of stations) {
@@ -302,7 +302,12 @@ function spawnPassenger(): void {
     roll -= item.weight;
     if (roll <= 0) { selected = item.choice; break; }
   }
-  selected.from.queue.push({ id: passengerId++, origin: selected.from.id, destination: selected.to.id, route: selected.route });
+  selected.from.queue.push({
+    id: passengerId++,
+    origin: selected.from.id,
+    destination: selected.to.id,
+    route: [...selected.route],
+  });
 }
 
 function boardPassengers(line: MetroLine, train: Train, station: Station): void {
@@ -1049,6 +1054,8 @@ function restartGame(): void {
     line.trains = [];
     line.fleetSize = 1;
   }
+  // Restarting changes the network topology just like editing a route.
+  routePlanner = createRoutePlanner(stations, lines);
   selectedLine = 0;
   hintDismissed = false;
   focusedStation = null;

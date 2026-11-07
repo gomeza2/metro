@@ -1,5 +1,6 @@
 import './style.css';
 import { drawCityOverlay } from './visuals';
+import { createRoutePlanner } from './simulation/pathfinding';
 
 type StationKind = 'residential' | 'commerce' | 'culture' | 'civic' | 'leisure';
 type Passenger = { id: number; origin: string; destination: string; route: string[] };
@@ -14,8 +15,6 @@ type Train = {
 type MetroLine = {
   id: number; name: string; color: string; stations: string[]; trains: Train[]; fleetSize: number;
 };
-type Edge = { to: string };
-
 const WORLD_W = 1200;
 const WORLD_H = 760;
 const COLORS = ['#e47762', '#5d92bd', '#6a9c81', '#d5a14e'];
@@ -50,6 +49,9 @@ const stations: Station[] = [
 const lines: MetroLine[] = COLORS.map((color, index) => ({
   id: index, name: `Line ${index + 1}`, color, stations: [], trains: [], fleetSize: 1,
 }));
+
+// Rebuilt only when a route changes; passenger spawning reuses the same graph snapshot.
+let routePlanner = createRoutePlanner(stations, lines);
 
 let selectedLine = 0;
 let focusedStation: Station | null = null;
@@ -98,45 +100,6 @@ const cityHour = () => Math.floor((8 * 60 + Math.floor(elapsed * 2.2)) / 60) % 2
 const capacityCost = () => 12 + (capacityLevel - 1) * 14;
 const expressCost = () => 10 + (expressLevel - 1) * 12;
 const dispatchCost = (line: MetroLine) => 18 + Math.max(0, line.fleetSize - 1) * 16;
-
-function graph(): Map<string, Edge[]> {
-  const result = new Map<string, Edge[]>();
-  for (const station of stations) result.set(station.id, []);
-  for (const line of lines) {
-    for (let i = 0; i < line.stations.length - 1; i += 1) {
-      const a = line.stations[i];
-      const b = line.stations[i + 1];
-      if (!a || !b) continue;
-      result.get(a)?.push({ to: b });
-      result.get(b)?.push({ to: a });
-    }
-  }
-  return result;
-}
-
-function shortestRoute(start: string, destination: string, network = graph()): string[] | null {
-  if (start === destination) return [start];
-  const queue: string[] = [start];
-  const previous = new Map<string, string | null>([[start, null]]);
-  while (queue.length) {
-    const current = queue.shift()!;
-    for (const edge of network.get(current) ?? []) {
-      if (previous.has(edge.to)) continue;
-      previous.set(edge.to, current);
-      if (edge.to === destination) {
-        const path = [destination];
-        let cursor: string | null = current;
-        while (cursor) {
-          path.unshift(cursor);
-          cursor = previous.get(cursor) ?? null;
-        }
-        return path;
-      }
-      queue.push(edge.to);
-    }
-  }
-  return null;
-}
 
 function normalizeTrainDirection(line: MetroLine, train: Train): void {
   const lastIndex = line.stations.length - 1;
@@ -206,10 +169,9 @@ function dispatchTrain(line: MetroLine): void {
 }
 
 function replanWaitingPassengers(): void {
-  const network = graph();
   for (const station of stations) {
     for (const passenger of station.queue) {
-      passenger.route = shortestRoute(station.id, passenger.destination, network) ?? [];
+      passenger.route = routePlanner.findRoute(station.id, passenger.destination) ?? [];
     }
   }
 }
@@ -222,6 +184,7 @@ function rebuildRoute(line: MetroLine): void {
     return true;
   });
   resetFleet(line);
+  routePlanner = createRoutePlanner(stations, lines);
   replanWaitingPassengers();
   updateHUD();
 }
@@ -295,13 +258,12 @@ function clearRoute(): void {
 }
 
 function spawnPassenger(): void {
-  const network = graph();
   const connected: Array<{ from: Station; to: Station; route: string[] }> = [];
   for (const from of stations) {
     if (from.queue.length >= 16) continue;
     for (const to of stations) {
       if (from.id === to.id || to.queue.length >= 16) continue;
-      const route = shortestRoute(from.id, to.id, network);
+      const route = routePlanner.findRoute(from.id, to.id);
       if (route && route.length >= 2) connected.push({ from, to, route });
     }
   }

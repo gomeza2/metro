@@ -10,6 +10,7 @@ This document records the current boundaries and the order in which the original
 - `src/simulation/trainMotion.ts` owns pure train-direction and next-stop calculations.
 - `src/simulation/passengerDemand.ts` owns phase-aware trip weighting and injectable weighted candidate selection.
 - `src/simulation/shiftPhases.ts` is the single source of truth for phase IDs, boundaries, mission copy and current-phase lookup.
+- `src/simulation/passengerOperations.ts` owns pure boarding selection and arrival classification for continuing, transferring and delivered passengers.
 - `src/visuals.ts` owns the fixed Port Azure illustration and its animated river highlights.
 - `src/style.css` owns the responsive interface and loading presentation.
 - `test/` contains Node's built-in test-runner suites. The tests compile only the simulation modules they exercise into the ignored `.test-build/` directory.
@@ -47,6 +48,17 @@ Passenger demand selection is isolated from the game loop.
 - The random source is injectable. Tests can verify phase behavior and selection boundaries without relying on an uncontrolled random sequence.
 - The selected candidate retains its station payload; the mutable passenger route is copied only when the passenger is created.
 
+### Passenger boarding and arrivals
+
+`passengerOperations.ts` contains the pure passenger rules that run when a train is ready to board or reaches a station.
+
+- Boarding accepts an explicit station, next stop and available seat count.
+- Eligible passengers must have the current station and the train's next stop as their next route edge.
+- Eligible passengers board in queue order. Other passengers keep their relative queue order.
+- Arrival resolution advances a passenger's path only when the station just reached matches the next route station.
+- Passengers are classified as continuing, transferring, or delivered. The caller remains responsible for the score, operating funds, and stadium mission counters.
+- The functions return new result arrays and progressed passenger route copies; they do not mutate the supplied passenger queue or onboard list.
+
 ### Train movement
 
 Train movement helpers are pure functions. They calculate the direction appropriate for an endpoint and the next valid station index without changing a train object. The simulation update remains responsible for applying a direction change. Rendering may ask for the next stop without mutating gameplay state.
@@ -80,7 +92,7 @@ The GitHub Actions build workflow runs the tests first, then strict TypeScript c
 
 ## Next extraction sequence
 
-1. Move the remaining passenger lifecycle and boarding/alighting state into a testable passenger system.
+1. Extract the remaining simulation state and tick orchestration into a DOM-free `GameSimulation` module.
 2. Move the simulation state and `updateSimulation` into a `GameSimulation` module that has no DOM or Canvas access.
 3. Use a fixed simulation step with an accumulator so 1x, 2x, and 3x speeds change simulation time without tying gameplay rules to the display refresh rate.
 4. Split Canvas rendering from interaction and presentation; add resize-aware backing-store management and profiling before adding more visual effects.

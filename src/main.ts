@@ -1,5 +1,7 @@
 import './style.css';
 import { drawCityOverlay } from './visuals';
+import { createRoutePlanner } from './simulation/pathfinding';
+import { directionForStation, nextStopIndex } from './simulation/trainMotion';
 
 type StationKind = 'residential' | 'commerce' | 'culture' | 'civic' | 'leisure';
 type Passenger = { id: number; origin: string; destination: string; route: string[] };
@@ -14,8 +16,6 @@ type Train = {
 type MetroLine = {
   id: number; name: string; color: string; stations: string[]; trains: Train[]; fleetSize: number;
 };
-type Edge = { to: string };
-
 const WORLD_W = 1200;
 const WORLD_H = 760;
 const COLORS = ['#e47762', '#5d92bd', '#6a9c81', '#d5a14e'];
@@ -50,6 +50,9 @@ const stations: Station[] = [
 const lines: MetroLine[] = COLORS.map((color, index) => ({
   id: index, name: `Line ${index + 1}`, color, stations: [], trains: [], fleetSize: 1,
 }));
+
+// Rebuilt only when a route changes; passenger spawning reuses the same graph snapshot.
+let routePlanner = createRoutePlanner(stations, lines);
 
 let selectedLine = 0;
 let focusedStation: Station | null = null;
@@ -99,58 +102,13 @@ const capacityCost = () => 12 + (capacityLevel - 1) * 14;
 const expressCost = () => 10 + (expressLevel - 1) * 12;
 const dispatchCost = (line: MetroLine) => 18 + Math.max(0, line.fleetSize - 1) * 16;
 
-function graph(): Map<string, Edge[]> {
-  const result = new Map<string, Edge[]>();
-  for (const station of stations) result.set(station.id, []);
-  for (const line of lines) {
-    for (let i = 0; i < line.stations.length - 1; i += 1) {
-      const a = line.stations[i];
-      const b = line.stations[i + 1];
-      if (!a || !b) continue;
-      result.get(a)?.push({ to: b });
-      result.get(b)?.push({ to: a });
-    }
-  }
-  return result;
-}
-
-function shortestRoute(start: string, destination: string, network = graph()): string[] | null {
-  if (start === destination) return [start];
-  const queue: string[] = [start];
-  const previous = new Map<string, string | null>([[start, null]]);
-  while (queue.length) {
-    const current = queue.shift()!;
-    for (const edge of network.get(current) ?? []) {
-      if (previous.has(edge.to)) continue;
-      previous.set(edge.to, current);
-      if (edge.to === destination) {
-        const path = [destination];
-        let cursor: string | null = current;
-        while (cursor) {
-          path.unshift(cursor);
-          cursor = previous.get(cursor) ?? null;
-        }
-        return path;
-      }
-      queue.push(edge.to);
-    }
-  }
-  return null;
-}
-
 function normalizeTrainDirection(line: MetroLine, train: Train): void {
-  const lastIndex = line.stations.length - 1;
-  if (train.stationIndex <= 0 && train.direction === -1) train.direction = 1;
-  else if (train.stationIndex >= lastIndex && train.direction === 1) train.direction = -1;
+  train.direction = directionForStation(train.stationIndex, train.direction, line.stations.length);
 }
 
 function nextTrainStop(line: MetroLine, train: Train): Station | null {
-  if (line.stations.length < 2) return null;
-  let targetIndex = train.stationIndex + train.direction;
-  if (targetIndex < 0 || targetIndex >= line.stations.length) {
-    targetIndex = train.stationIndex - train.direction;
-  }
-  const id = line.stations[targetIndex];
+  const targetIndex = nextStopIndex(train.stationIndex, train.direction, line.stations.length);
+  const id = targetIndex === null ? undefined : line.stations[targetIndex];
   return id ? stationById(id) : null;
 }
 
@@ -206,10 +164,9 @@ function dispatchTrain(line: MetroLine): void {
 }
 
 function replanWaitingPassengers(): void {
-  const network = graph();
   for (const station of stations) {
     for (const passenger of station.queue) {
-      passenger.route = shortestRoute(station.id, passenger.destination, network) ?? [];
+      passenger.route = [...(routePlanner.findRoute(station.id, passenger.destination) ?? [])];
     }
   }
 }
@@ -222,6 +179,7 @@ function rebuildRoute(line: MetroLine): void {
     return true;
   });
   resetFleet(line);
+  routePlanner = createRoutePlanner(stations, lines);
   replanWaitingPassengers();
   updateHUD();
 }
@@ -295,13 +253,12 @@ function clearRoute(): void {
 }
 
 function spawnPassenger(): void {
-  const network = graph();
-  const connected: Array<{ from: Station; to: Station; route: string[] }> = [];
+  const connected: Array<{ from: Station; to: Station; route: readonly string[] }> = [];
   for (const from of stations) {
     if (from.queue.length >= 16) continue;
     for (const to of stations) {
       if (from.id === to.id || to.queue.length >= 16) continue;
-      const route = shortestRoute(from.id, to.id, network);
+      const route = routePlanner.findRoute(from.id, to.id);
       if (route && route.length >= 2) connected.push({ from, to, route });
     }
   }
@@ -345,7 +302,12 @@ function spawnPassenger(): void {
     roll -= item.weight;
     if (roll <= 0) { selected = item.choice; break; }
   }
-  selected.from.queue.push({ id: passengerId++, origin: selected.from.id, destination: selected.to.id, route: selected.route });
+  selected.from.queue.push({
+    id: passengerId++,
+    origin: selected.from.id,
+    destination: selected.to.id,
+    route: [...selected.route],
+  });
 }
 
 function boardPassengers(line: MetroLine, train: Train, station: Station): void {
@@ -429,36 +391,7 @@ function updateSimulation(dt: number): void {
     if (station.overload >= 17) endGame(station);
   }
 
-  if (elapsed >= 70 && elapsed < 100) {
-    $('#event-title').textContent = 'Match starts soon';
-    $('#event-copy').textContent = 'Grand Stadium · prepare extra service.';
-    $('.event-state').textContent = 'UP NEXT';
-    $('#tip-text').textContent = 'A major event is approaching at Grand Stadium. Connect it early so passengers have time to arrive.';
-  } else if (elapsed >= 100 && elapsed < 160) {
-    $('#event-title').textContent = 'Grand Stadium event';
-    $('#event-copy').textContent = 'Passenger demand is surging near the arena.';
-    $('.event-state').textContent = 'LIVE';
-    $('#tip-text').textContent = 'The stadium is attracting extra passengers. A direct connection can reduce pressure on nearby stations.';
-  } else if (elapsed >= 160 && elapsed < 205) {
-    $('#event-title').textContent = 'Crowds heading home';
-    $('#event-copy').textContent = 'The post-match rush is moving across town.';
-    $('.event-state').textContent = 'RUSH HOUR';
-    $('#tip-text').textContent = 'Passengers are now leaving Grand Stadium. Keep a direct route toward residential districts open.';
-  } else if (cityHour() >= 16) {
-    $('#event-title').textContent = 'Evening commute';
-    $('#event-copy').textContent = 'Commuters are heading back across the city.';
-    $('.event-state').textContent = 'ACTIVE';
-    $('#tip-text').textContent = 'The evening commute is spreading across the network. Add a train or strengthen the busiest route.';
-  } else if (elapsed >= 205) {
-    $('#event-title').textContent = 'Afternoon build-up';
-    $('#event-copy').textContent = 'Commuter demand is building before the evening peak.';
-    $('.event-state').textContent = 'BUILDING';
-    $('#tip-text').textContent = 'Use this quieter window to rebalance routes before evening departures begin.';
-  } else if (elapsed > 100) {
-    $('#event-title').textContent = 'City getting busier';
-    $('#event-copy').textContent = 'Demand is rising. Keep transfer stations moving.';
-    $('.event-state').textContent = 'ACTIVE';
-  }
+
 }
 
 function endGame(station: Station): void {
@@ -816,11 +749,90 @@ function updatePhaseMission(phaseIndex: number): void {
   $('#mission-reward').textContent = claimed ? 'REWARD CLAIMED' : `REWARD +${PHASE_REWARD}`;
 }
 
+type CityEventPresentation = {
+  key: string;
+  title: string;
+  copy: string;
+  state: string;
+  tip?: string;
+};
+
+let lastDisplayedCityEvent: string | null = null;
+
+function updateCityEvent(): void {
+  let event: CityEventPresentation;
+
+  if (elapsed >= 70 && elapsed < 100) {
+    event = {
+      key: 'stadium-preparation',
+      title: 'Match starts soon',
+      copy: 'Grand Stadium · prepare extra service.',
+      state: 'UP NEXT',
+      tip: 'A major event is approaching at Grand Stadium. Connect it early so passengers have time to arrive.',
+    };
+  } else if (elapsed >= 100 && elapsed < 160) {
+    event = {
+      key: 'stadium-arrival',
+      title: 'Grand Stadium event',
+      copy: 'Passenger demand is surging near the arena.',
+      state: 'LIVE',
+      tip: 'The stadium is attracting extra passengers. A direct connection can reduce pressure on nearby stations.',
+    };
+  } else if (elapsed >= 160 && elapsed < 205) {
+    event = {
+      key: 'stadium-return',
+      title: 'Crowds heading home',
+      copy: 'The post-match rush is moving across town.',
+      state: 'RUSH HOUR',
+      tip: 'Passengers are now leaving Grand Stadium. Keep a direct route toward residential districts open.',
+    };
+  } else if (cityHour() >= 16) {
+    event = {
+      key: 'evening-commute',
+      title: 'Evening commute',
+      copy: 'Commuters are heading back across the city.',
+      state: 'ACTIVE',
+      tip: 'The evening commute is spreading across the network. Add a train or strengthen the busiest route.',
+    };
+  } else if (elapsed >= 205) {
+    event = {
+      key: 'afternoon-build-up',
+      title: 'Afternoon build-up',
+      copy: 'Commuter demand is building before the evening peak.',
+      state: 'BUILDING',
+      tip: 'Use this quieter window to rebalance routes before evening departures begin.',
+    };
+  } else if (elapsed > 100) {
+    event = {
+      key: 'city-getting-busier',
+      title: 'City getting busier',
+      copy: 'Demand is rising. Keep transfer stations moving.',
+      state: 'ACTIVE',
+    };
+  } else {
+    event = {
+      key: 'morning-commute',
+      title: 'Morning commute',
+      copy: 'The city is starting its day.',
+      state: 'ACTIVE',
+      tip: 'Tip: one well-connected interchange can be more useful than three isolated lines.',
+    };
+  }
+
+  if (event.key === lastDisplayedCityEvent) return;
+  lastDisplayedCityEvent = event.key;
+  $('#event-title').textContent = event.title;
+  $('#event-copy').textContent = event.copy;
+  $('.event-state').textContent = event.state;
+  if (event.tip) $('#tip-text').textContent = event.tip;
+}
+
 function updateHUD(): void {
   $('#score').textContent = String(score).padStart(3, '0');
   $('#best-score').textContent = String(bestScore).padStart(3, '0');
   const phaseIndex = Math.max(0, SHIFT_PHASES.findIndex((phase, index) => elapsed >= phase.start && (elapsed < phase.end || index === SHIFT_PHASES.length - 1)));
   updatePhaseMission(phaseIndex);
+  updateCityEvent();
   $('#in-transit').textContent = String(totalOnTrains());
   $('#waiting').textContent = String(totalWaiting());
   $('#active-lines').textContent = `${activeLines()} / 4`;
@@ -1042,6 +1054,8 @@ function restartGame(): void {
     line.trains = [];
     line.fleetSize = 1;
   }
+  // Restarting changes the network topology just like editing a route.
+  routePlanner = createRoutePlanner(stations, lines);
   selectedLine = 0;
   hintDismissed = false;
   focusedStation = null;
@@ -1054,6 +1068,7 @@ function restartGame(): void {
   stadiumArrivalsDelivered = 0;
   stadiumDeparturesDelivered = 0;
   completedPhaseObjectives.clear();
+  lastDisplayedCityEvent = null;
   paused = false;
   simulationSpeed = 1;
   capacityLevel = 1;

@@ -1,3 +1,11 @@
+## Current release — v0.10.0 — Route engine and rendering foundations
+
+- Shortest-path planning now lives in a standalone simulation module with an immutable network snapshot and per-pair route cache.
+- Rebuild the route planner only after route edits; passengers receive their own path arrays so route progression cannot mutate cached paths.
+- The city illustration is drawn to an offscreen canvas once per page load. The live frame paints that cached layer plus a small animated river detail.
+- Node's native test runner covers routing, disconnected networks, cycles, independent cached paths, and snapshot behavior.
+- GitHub Actions must pass simulation tests, strict TypeScript checking, and the Vite production build before a change is integrated.
+
 ## Current release — v0.9.0 — Better first launch, phase identity and adaptive audio
 
 - Startup progress remains visible until the TypeScript game module signals that the city, controls, and first render are ready.

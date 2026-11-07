@@ -59,7 +59,7 @@ function building(ctx: CanvasRenderingContext2D, x: number, y: number, w: number
   }
 }
 
-export function drawCityOverlay(ctx: CanvasRenderingContext2D, time: number): void {
+function drawStaticCity(ctx: CanvasRenderingContext2D): void {
   // Roads create a coherent street plan under the transit network.
   const arterial: Point[][] = [
     [{x:35,y:385},{x:250,y:385},{x:405,y:365},{x:615,y:405},{x:825,y:390},{x:1010,y:420}],
@@ -70,18 +70,8 @@ export function drawCityOverlay(ctx: CanvasRenderingContext2D, time: number): vo
   ];
   for (const path of arterial) road(ctx, path, 12);
 
-  // The river gets a few quiet moving glints and a bridge crossing.
+  // Static river bank and bridge geometry are cached with the city artwork.
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,.42)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 6; i += 1) {
-    const y = 70 + i * 112;
-    const offset = (time * 5 + i * 29) % 58;
-    ctx.beginPath();
-    ctx.moveTo(1110 + offset * 0.2, y);
-    ctx.quadraticCurveTo(1136 + offset * 0.2, y + 7, 1160, y + 1);
-    ctx.stroke();
-  }
   ctx.fillStyle = '#c5d4cc';
   ctx.fillRect(1069, 393, 112, 12);
   ctx.fillStyle = '#f6f5ed';
@@ -173,4 +163,52 @@ export function drawCityOverlay(ctx: CanvasRenderingContext2D, time: number): vo
   ctx.fillText('HARBOR FRONT', 58, 439);
   ctx.fillText('AIRFIELD', 1084, 47);
   ctx.letterSpacing = '0px';
+}
+
+const CITY_LAYER_WIDTH = 1200;
+const CITY_LAYER_HEIGHT = 760;
+let cachedCityLayer: HTMLCanvasElement | null = null;
+
+function getStaticCityLayer(): HTMLCanvasElement | null {
+  if (cachedCityLayer) return cachedCityLayer;
+
+  const layer = document.createElement('canvas');
+  layer.width = CITY_LAYER_WIDTH;
+  layer.height = CITY_LAYER_HEIGHT;
+  const layerContext = layer.getContext('2d');
+  if (!layerContext) return null;
+
+  drawStaticCity(layerContext);
+  cachedCityLayer = layer;
+  return cachedCityLayer;
+}
+
+function drawRiverGlints(ctx: CanvasRenderingContext2D, time: number): void {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.42)';
+  ctx.lineWidth = 2;
+
+  for (let index = 0; index < 6; index += 1) {
+    // Leave the bridge span clear so animated reflections never sit on top of it.
+    if (index === 3) continue;
+    const y = 70 + index * 112;
+    const offset = (time * 5 + index * 29) % 58;
+    ctx.beginPath();
+    ctx.moveTo(1110 + offset * 0.2, y);
+    ctx.quadraticCurveTo(1136 + offset * 0.2, y + 7, 1160, y + 1);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Draws the static city illustration from a one-time offscreen cache, then
+ * paints only the small animated river highlights on top of it.
+ */
+export function drawCityOverlay(ctx: CanvasRenderingContext2D, time: number): void {
+  const layer = getStaticCityLayer();
+  if (layer) ctx.drawImage(layer, 0, 0);
+  else drawStaticCity(ctx);
+  drawRiverGlints(ctx, time);
 }

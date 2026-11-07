@@ -35,7 +35,7 @@ In repository Settings → Pages, set the build and deployment source to **GitHu
 
 Passengers only appear between stations that are connected by the current network. Trains reverse at the ends of each line. At interchange stations, passengers can change lines when the route requires it.
 
-## Current scope — v0.7.0
+## Previous scope — v0.7.0
 
 The shift now has five phase goals with progress tracking and an $8 reward for each completed goal. Objectives include starting passenger service, connecting Grand Stadium, delivering passengers to and from the venue, and reaching a total delivery target. The session report shows completed goals and a locally saved personal best score. The stadium return phase tracks passengers from their original station through transfers.
 
@@ -55,9 +55,11 @@ The project deliberately starts without accounts, a backend, or external music s
 
 ## Project structure
 
+- `src/boot.ts`: startup progress and loading error recovery.
 - `src/main.ts`: simulation, rendering, input, and audio.
-- `src/style.css`: game interface and responsive layout.
-- `index.html`: application shell.
+- `src/visuals.ts`: city scenery and map landmarks.
+- `src/style.css`: game interface, loading screen, and responsive layout.
+- `index.html`: accessible application shell.
 - `docs/GAME_DESIGN.md`: product direction and development roadmap.
 
 ## Design principles
@@ -78,3 +80,13 @@ The prototype uses original code and procedurally drawn graphics/audio. No Mini 
 - Refined the main menu and gameplay dashboard with clearer spacing, contrast, card hierarchy, and map-first emphasis.
 - Added a five-phase preview to the opening screen so players know what changes during a shift.
 - Improved the readability of phase objectives, progress bars, route controls, and responsive layouts.
+
+
+## Current release — v0.9.0 — Better first launch, phase identity and sound
+
+- Added a startup screen with a progress indicator that waits for the game engine's ready signal. If startup fails, the player gets a clear retry action.
+- Reworked the five shift descriptions and passenger destination weights so morning, event preparation, stadium arrivals, post-event returns, and the afternoon build-up create different travel patterns.
+- Rebuilt the optional Web Audio soundtrack as an original repeating synth motif. Its notes and tempo respond to the current phase and passenger pressure.
+- Added optional Spotify search shortcuts for players who prefer their own music. Spotify opens in a separate tab; it is not required and does not replace the game's original soundtrack.
+- Reduced DOM-heavy HUD refreshes while keeping the Canvas animation on the display refresh cycle.
+- Made train next-stop lookup read-only so drawing a train cannot change its simulation direction.

@@ -1,3 +1,5 @@
+import { getShiftPhase } from './shiftPhases';
+
 export type PassengerDistrictKind = 'residential' | 'commerce' | 'culture' | 'civic' | 'leisure';
 
 export interface DemandStation {
@@ -37,24 +39,30 @@ export function passengerTripWeight<TPayload>(
   if (hour >= 16 && hour < 20 && ['commerce', 'culture', 'civic'].includes(from.kind)) weight *= 2.2;
   if (hour >= 16 && hour < 20 && to.kind === 'residential') weight *= 1.8;
 
-  // Shift phases deliberately change trip direction and destination patterns.
-  if (elapsed < 70) {
-    if (from.kind === 'residential') weight *= 1.8;
-    if (['commerce', 'culture', 'civic'].includes(to.kind)) weight *= 1.35;
-  } else if (elapsed < 100) {
-    if (to.id === 'stadium') weight *= 3.4;
-    if (from.id === 'stadium') weight *= 0.12;
-  } else if (elapsed < 160) {
-    if (to.id === 'stadium') weight *= 7.2;
-    if (from.id === 'stadium') weight *= 0.08;
-  } else if (elapsed < 205) {
-    if (from.id === 'stadium') weight *= 8.4;
-    if (to.id === 'stadium') weight *= 0.08;
-    if (to.kind === 'residential') weight *= 1.4;
-  } else {
-    if (from.kind !== 'residential') weight *= 1.55;
-    if (to.kind === 'residential') weight *= 2.1;
-    if (to.id === 'stadium') weight *= 0.5;
+  // The same phase definition drives the mission HUD, event panel and demand.
+  switch (getShiftPhase(elapsed).id) {
+    case 'morning-network':
+      if (from.kind === 'residential') weight *= 1.8;
+      if (['commerce', 'culture', 'civic'].includes(to.kind)) weight *= 1.35;
+      break;
+    case 'stadium-preparation':
+      if (to.id === 'stadium') weight *= 3.4;
+      if (from.id === 'stadium') weight *= 0.12;
+      break;
+    case 'stadium-arrival':
+      if (to.id === 'stadium') weight *= 7.2;
+      if (from.id === 'stadium') weight *= 0.08;
+      break;
+    case 'post-event-return':
+      if (from.id === 'stadium') weight *= 8.4;
+      if (to.id === 'stadium') weight *= 0.08;
+      if (to.kind === 'residential') weight *= 1.4;
+      break;
+    case 'afternoon-commute':
+      if (from.kind !== 'residential') weight *= 1.55;
+      if (to.kind === 'residential') weight *= 2.1;
+      if (to.id === 'stadium') weight *= 0.5;
+      break;
   }
 
   return weight;

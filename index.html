@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f2ed" />
+    <meta name="description" content="CITYFLOW — a calm, challenging urban transit strategy game." />
+    <title>CITYFLOW — Urban Transit Strategy</title>
+  </head>
+  <body class="menu-active">
+    <div id="app">
+
+      <section id="loading-screen" class="loading-screen" role="status" aria-live="polite" aria-label="Loading CITYFLOW">
+        <div class="loading-card">
+          <div class="loading-brand">
+            <span class="brand-mark"><i></i><i></i><i></i></span>
+            <span>CITYFLOW</span>
+            <span class="loading-version">0.9</span>
+          </div>
+          <p class="loading-kicker">PORT AZURE · TRANSIT CONTROL</p>
+          <h1>Preparing your city<span>.</span></h1>
+          <p class="loading-copy">Connecting the network, stations and passenger routes.</p>
+          <div class="loading-progress-meta">
+            <span id="loading-status">Opening Port Azure</span>
+            <strong id="loading-percent">04%</strong>
+          </div>
+          <div id="loading-progress" class="loading-track" role="progressbar" aria-label="Game loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="4">
+            <i id="loading-bar"></i>
+          </div>
+          <p id="loading-error" class="loading-error" hidden>City startup was interrupted. Please try again.</p>
+          <button id="loading-retry" class="loading-retry" type="button" hidden>Reload game</button>
+          <div class="loading-footer"><span>BUILT FOR CLEAR THINKING</span><span>INITIALISING SYSTEMS</span></div>
+        </div>
+      </section>
+
+      <section id="main-menu" class="main-menu" aria-label="CITYFLOW main menu" aria-hidden="false">
+        <div class="menu-shell">
+          <nav class="menu-nav" aria-label="Main navigation">
+            <a class="menu-brand" href="#" aria-label="CITYFLOW home">
+              <span class="brand-mark"><i></i><i></i><i></i></span>
+              <span>CITYFLOW</span>
+              <span class="menu-version">0.9</span>
+            </a>
+            <div class="menu-nav-meta">
+              <span class="menu-online"><i></i> PLAYABLE CITY SIMULATOR</span>
+              <a class="spotify-link menu-spotify-link" href="https://open.spotify.com/search/electronic%20instrumental%20gaming%20music" target="_blank" rel="noopener noreferrer" aria-label="Find instrumental game music on Spotify">♫ <span>Spotify mix</span></a>
+              <button id="menu-sound-button" class="menu-sound" type="button" aria-label="Toggle original ambient soundtrack">♫ <span>Sound off</span></button>
+            </div>
+          </nav>
+
+          <div class="menu-hero">
+            <div class="menu-copy">
+              <p class="menu-kicker"><span></span> THE CITY IS YOURS TO CONNECT</p>
+              <h1>Build a network.<br />Keep the <em>city moving.</em></h1>
+              <p class="menu-lead">Start with two stations, learn how demand moves, then adapt your lines as the city enters new phases. Every shift brings a different problem to solve.</p>
+              <div class="menu-actions">
+                <button id="start-game" class="menu-play-button" type="button">
+                  <span class="play-icon">▶</span>
+                  <span><b>Start first shift</b><small>The clock starts after your first route</small></span>
+                  <span class="play-arrow">↗</span>
+                </button>
+                <a class="menu-secondary-link" href="#menu-how-it-works">How the city works <span>↓</span></a>
+              </div>
+              <div class="menu-facts">
+                <div><strong>14</strong><span>STATIONS</span></div>
+                <i></i>
+                <div><strong>04</strong><span>METRO LINES</span></div>
+                <i></i>
+                <div><strong>05</strong><span>SHIFT PHASES</span></div>
+              </div>
+            </div>
+
+            <div class="menu-art-wrap">
+              <div class="menu-art-glow"></div>
+              <div class="menu-map-window">
+                <div class="menu-map-header">
+                  <div><span class="menu-map-overline">CITY OVERVIEW / 001</span><strong>PORT AZURE</strong></div>
+                  <span class="menu-live"><i></i> LIVE PREVIEW</span>
+                </div>
+                <svg class="menu-map-art" viewBox="0 0 720 470" role="img" aria-label="Illustrated coastal city map with four colored metro routes">
+                  <defs>
+                    <pattern id="menu-grid" width="34" height="34" patternUnits="userSpaceOnUse">
+                      <path d="M34 0H0V34" fill="none" stroke="#d7dfd5" stroke-width="1"/>
+                    </pattern>
+                    <filter id="station-shadow" x="-100%" y="-100%" width="300%" height="300%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#456050" flood-opacity=".2"/>
+                    </filter>
+                  </defs>
+                  <rect width="720" height="470" fill="#e9eee4"/>
+                  <rect width="720" height="470" fill="url(#menu-grid)" opacity=".76"/>
+                  <path d="M535 -10 C510 72 568 116 548 189 S590 287 555 352 S561 432 612 485" fill="none" stroke="#d1e3e4" stroke-width="88"/>
+                  <path d="M535 -10 C510 72 568 116 548 189 S590 287 555 352 S561 432 612 485" fill="none" stroke="#f7faf2" stroke-width="2" stroke-dasharray="4 10" opacity=".85"/>
+                  <path d="M35 92 L210 112 L350 85 L492 106 M58 245 L215 225 L360 250 L510 226 M90 385 L260 366 L415 392 L552 365" fill="none" stroke="#cbd5ca" stroke-width="13" stroke-linecap="round"/>
+                  <path d="M35 92 L210 112 L350 85 L492 106 M58 245 L215 225 L360 250 L510 226 M90 385 L260 366 L415 392 L552 365" fill="none" stroke="#f8f9f2" stroke-width="9" stroke-linecap="round"/>
+                  <path d="M150 28 L168 160 L145 290 L190 440 M350 25 L338 145 L360 260 L340 430 M455 18 L438 150 L458 270 L445 440" fill="none" stroke="#d0d9ce" stroke-width="10" stroke-linecap="round"/>
+                  <path d="M150 28 L168 160 L145 290 L190 440 M350 25 L338 145 L360 260 L340 430 M455 18 L438 150 L458 270 L445 440" fill="none" stroke="#fafaf4" stroke-width="6" stroke-linecap="round"/>
+                  <path d="M42 42 L120 42 L120 84 L48 84Z M220 42 L292 42 L292 76 L220 76Z M248 290 L310 290 L310 345 L248 345Z M390 300 L462 300 L462 350 L390 350Z M70 300 L130 300 L130 346 L70 346Z" fill="#dce8d6" stroke="#d0decf" stroke-width="1.5"/>
+                  <path d="M58 58 L105 58 M238 58 L274 58 M266 310 L294 310 M408 320 L444 320" stroke="#b9cbb6" stroke-width="4" stroke-linecap="round"/>
+                  <g fill="#b6c9ad" opacity=".9">
+                    <circle cx="92" cy="316" r="8"/><circle cx="112" cy="332" r="6"/><circle cx="82" cy="345" r="5"/>
+                    <circle cx="273" cy="305" r="6"/><circle cx="294" cy="330" r="7"/><circle cx="432" cy="315" r="6"/>
+                  </g>
+                  <path d="M72 245 C130 228 176 215 215 225 S294 256 360 250 S438 231 510 226" fill="none" stroke="#e47762" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M150 58 C165 125 168 160 145 205 S128 312 190 385 S282 402 340 430" fill="none" stroke="#6397bf" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M210 112 C255 140 292 176 338 205 S418 238 458 270 S477 345 552 365" fill="none" stroke="#6d9c80" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M350 85 C360 143 360 190 360 250 S352 342 340 430" fill="none" stroke="#d0a04e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                  <g class="route-flow" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="2 15">
+                    <path d="M72 245 C130 228 176 215 215 225 S294 256 360 250 S438 231 510 226"/>
+                    <path d="M150 58 C165 125 168 160 145 205 S128 312 190 385 S282 402 340 430"/>
+                    <path d="M210 112 C255 140 292 176 338 205 S418 238 458 270 S477 345 552 365"/>
+                    <path d="M350 85 C360 143 360 190 360 250 S352 342 340 430"/>
+                  </g>
+                  <g filter="url(#station-shadow)" fill="#fbfcf7" stroke-width="5">
+                    <circle cx="72" cy="245" r="10" stroke="#e47762"/><circle cx="215" cy="225" r="10" stroke="#e47762"/>
+                    <circle cx="360" cy="250" r="12" stroke="#e47762"/><circle cx="510" cy="226" r="10" stroke="#e47762"/>
+                    <circle cx="150" cy="58" r="9" stroke="#6397bf"/><circle cx="145" cy="205" r="9" stroke="#6397bf"/>
+                    <circle cx="190" cy="385" r="9" stroke="#6397bf"/><circle cx="340" cy="430" r="9" stroke="#6397bf"/>
+                    <circle cx="210" cy="112" r="9" stroke="#6d9c80"/><circle cx="338" cy="205" r="9" stroke="#6d9c80"/>
+                    <circle cx="458" cy="270" r="9" stroke="#6d9c80"/><circle cx="552" cy="365" r="9" stroke="#6d9c80"/>
+                    <circle cx="350" cy="85" r="9" stroke="#d0a04e"/><circle cx="360" cy="250" r="9" stroke="#d0a04e"/>
+                  </g>
+                  <g fill="#758a79" font-family="DM Mono, monospace" font-size="10" letter-spacing="1.3">
+                    <text x="38" y="218">OLD HARBOR</text><text x="175" y="198">CENTRAL</text><text x="376" y="237">CROSSROADS</text>
+                    <text x="476" y="202">EASTBANK</text><text x="90" y="42">WEST</text><text x="555" y="388">HILLVIEW</text>
+                    <text x="255" y="414">SOUTH PIER</text><text x="376" y="68">CAMPUS</text>
+                  </g>
+                  <g transform="translate(422 158) rotate(18)">
+                    <rect x="-19" y="-10" width="38" height="20" rx="7" fill="#fffdf7" stroke="#4e7460" stroke-width="2"/>
+                    <rect x="-10" y="-6" width="7" height="6" rx="1.5" fill="#9bb7a2"/><rect x="2" y="-6" width="7" height="6" rx="1.5" fill="#9bb7a2"/>
+                    <circle cx="-10" cy="10" r="2.5" fill="#425c4c"/><circle cx="10" cy="10" r="2.5" fill="#425c4c"/>
+                  </g>
+                  <g transform="translate(617 76)">
+                    <circle r="24" fill="#f6f7ef" stroke="#d5dfd3"/>
+                    <path d="M0 -13 L4 0 L0 13 L-4 0Z" fill="#79927b"/>
+                    <text x="0" y="37" fill="#94a296" font-family="DM Mono,monospace" font-size="9" text-anchor="middle">N</text>
+                  </g>
+                </svg>
+                <div class="menu-map-legend">
+                  <span><i class="legend-coral"></i> LINE 01</span><span><i class="legend-blue"></i> LINE 02</span><span><i class="legend-green"></i> LINE 03</span><span><i class="legend-amber"></i> LINE 04</span>
+                </div>
+              </div>
+              <div class="map-float-card"><span class="float-icon">↗</span><span><b>A city in motion</b><small>Every connection matters.</small></span><span class="float-signal"><i></i><i></i><i></i></span></div>
+            </div>
+          </div>
+
+          <section id="menu-how-it-works" class="menu-bottom">
+            <div class="menu-bottom-heading"><span>THE SYSTEM</span><p>Your first shift, in three clear steps.</p></div>
+            <div class="menu-feature-grid">
+              <article class="menu-feature"><span class="feature-number">01</span><div><b>Connect the districts</b><p>Choose a color and connect two or more stations. A train starts running automatically.</p></div></article>
+              <article class="menu-feature"><span class="feature-number">02</span><div><b>Read the pressure</b><p>Passenger dots show where people are waiting. Inspect busy stations before queues become critical.</p></div></article>
+              <article class="menu-feature"><span class="feature-number">03</span><div><b>Adapt your network</b><p>Earn funds by delivering passengers. Add trains, improve capacity or speed when the network needs it.</p></div></article>
+            </div>
+          </section>
+
+          <section class="menu-phase-preview" aria-label="Five shift phases">
+            <div class="phase-preview-heading"><span>THE CITY NEVER STANDS STILL</span><p>Five phases. Five different problems to solve.</p></div>
+            <div class="phase-preview-grid">
+              <article><span>01 · 08:00</span><b>Morning network</b><small>Connect the first districts and start service.</small></article>
+              <article><span>02 · 10:35</span><b>Stadium preparation</b><small>Build the link before the crowd arrives.</small></article>
+              <article><span>03 · 11:40</span><b>Stadium arrival rush</b><small>Carry the event crowd into the arena.</small></article>
+              <article><span>04 · 13:50</span><b>Post-event return</b><small>Move passengers back across the city.</small></article>
+              <article><span>05 · 15:30+</span><b>Afternoon &amp; evening commute</b><small>Balance the growing commute and city demand.</small></article>
+            </div>
+          </section>
+          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.9.0</span></footer>
+        </div>
+      </section>
+
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="CITYFLOW home">
+          <span class="brand-mark"><i></i><i></i><i></i></span>
+          <span>CITYFLOW</span>
+          <span class="brand-edition">CITY EDITION</span>
+        </a>
+        <div class="topbar-right">
+          <span class="live-indicator"><i></i> LIVE CITY</span>
+          <button id="sound-button" class="icon-button" type="button" title="Toggle original ambient soundtrack" aria-label="Toggle original ambient soundtrack">♫ <span>Sound off</span></button>
+          <a class="spotify-link" href="https://open.spotify.com/search/electronic%20instrumental%20gaming%20music" target="_blank" rel="noopener noreferrer" aria-label="Find instrumental game music on Spotify">♫ <span>Spotify</span></a>
+          <button id="help-button" class="icon-button" type="button" title="How to play" aria-label="How to play">? <span>How to play</span></button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="game-column">
+          <div class="intro-row">
+            <div>
+              <p class="eyebrow">URBAN NETWORK SIMULATOR <span>•</span> PORT AZURE</p>
+              <h1>Make the city <em>move.</em></h1>
+              <p class="subtitle">Connect places. Move people. Think one step ahead.</p>
+            </div>
+            <div class="city-tag"><span class="sun-icon">◒</span><span>PORT AZURE</span><small>Temperate · Coastal</small></div>
+          </div>
+
+          <section class="game-frame" aria-label="CITYFLOW game">
+            <div class="map-topline">
+              <div><span class="map-live-dot"></span> NETWORK MAP <span class="map-separator">/</span> PORT AZURE</div>
+              <div class="map-top-actions"><span class="map-coordinates">35° 41' N&nbsp;&nbsp; 139° 41' E</span><button id="map-mode-button" class="map-mode-button" type="button" aria-pressed="false"><span class="mode-icon">⌁</span><span><b>Edit route</b><small>Tap stations to connect</small></span></button></div>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="game-canvas" aria-label="Interactive city map. Select a line, then click stations to connect them."></canvas>
+              <div id="start-hint" class="map-hint">
+                <span class="hint-number">01</span>
+                <span><strong>Start your first line</strong><small>Choose a color, then select two stations. The clock waits for your first connection.</small></span>
+                <button id="dismiss-hint" type="button" aria-label="Dismiss hint">×</button>
+              </div>
+              <div id="game-over" class="game-over hidden">
+                <div class="game-over-card">
+                  <span class="eyebrow">CITYFLOW · SHIFT REPORT</span>
+                  <h2>The network<br/><em>needs a rethink.</em></h2>
+                  <p id="game-over-copy">The city became too crowded to keep moving.</p>
+                  <div class="final-score"><span>PASSENGERS DELIVERED</span><strong id="final-score">0</strong></div>
+                  <div class="report-stats"><div><span>PERSONAL BEST</span><strong id="final-best">000</strong></div><div><span>PHASE GOALS</span><strong id="final-phases">0 / 5</strong></div></div>
+                  <p id="record-state" class="record-state">PERSONAL BEST · 000</p>
+                  <button id="restart-button" class="primary-button" type="button">Start a new city <span>↗</span></button>
+                </div>
+              </div>
+              <div id="help-popover" class="help-popover hidden">
+                <button id="close-help" type="button" aria-label="Close help">×</button>
+                <span class="eyebrow">QUICK FIELD GUIDE</span>
+                <h3>Build a network that works.</h3>
+                <ol>
+                  <li><b>Choose a line color</b> from the control dock.</li>
+                  <li><b>Click stations</b> in the order you want trains to visit them.</li>
+                  <li><b>Connect at least two stations.</b> A train will start running automatically.</li>
+                  <li><b>Watch passenger dots.</b> They show where people are waiting.</li>
+                  <li><b>Connect busy places</b> and avoid letting one station become overloaded.</li>
+                </ol>
+                <p>Tip: one well-connected interchange can be more useful than three isolated lines.</p>
+              </div>
+            </div>
+
+            <div class="map-footer">
+              <div class="map-legend"><span><i class="legend-station"></i> Station</span><span><i class="legend-passenger"></i> Waiting passenger</span><span><i class="legend-train"></i> Train</span></div>
+              <div id="map-status" class="map-status">AWAITING FIRST CONNECTION</div>
+            </div>
+          </section>
+
+          <section class="control-dock">
+            <div class="dock-main">
+              <div class="dock-heading"><span class="eyebrow">YOUR LINES</span><span class="dock-note">Select a line to edit its route</span></div>
+              <div id="line-picker" class="line-picker" aria-label="Metro line selection">
+                <button class="line-swatch selected" data-line="0" type="button" aria-label="Select coral line" title="Coral line"><i style="--swatch:#e47762"></i><span>01</span></button>
+                <button class="line-swatch" data-line="1" type="button" aria-label="Select blue line" title="Blue line"><i style="--swatch:#5d92bd"></i><span>02</span></button>
+                <button class="line-swatch" data-line="2" type="button" aria-label="Select green line" title="Green line"><i style="--swatch:#6a9c81"></i><span>03</span></button>
+                <button class="line-swatch" data-line="3" type="button" aria-label="Select amber line" title="Amber line"><i style="--swatch:#d5a14e"></i><span>04</span></button>
+              </div>
+            </div>
+            <div class="dock-actions">
+              <button id="undo-button" class="text-button" type="button">↶ <span>Undo</span></button>
+              <button id="clear-button" class="text-button" type="button">× <span>Clear line</span></button>
+            </div>
+          </section>
+
+          <section class="upgrade-strip">
+            <div class="upgrade-title"><span class="eyebrow">NETWORK TOOLS</span><span class="coming-label">PROTOTYPE</span></div>
+            <button id="capacity-button" class="upgrade-card" type="button">
+              <span class="upgrade-icon">▥</span><span class="upgrade-copy"><b>Extra capacity</b><small id="capacity-state">Train capacity ×1</small></span><span class="upgrade-cost capacity-cost">$12</span>
+            </button>
+            <button id="speed-button" class="upgrade-card" type="button">
+              <span class="upgrade-icon">»</span><span class="upgrade-copy"><b>Express service</b><small id="express-state">Train speed ×1</small></span><span class="upgrade-cost express-cost">$10</span>
+            </button>
+            <button id="dispatch-button" class="upgrade-card" type="button">
+              <span class="upgrade-icon">↔</span><span class="upgrade-copy"><b>Dispatch train</b><small id="fleet-state">Fleet · 1/3 trains</small></span><span id="dispatch-cost" class="upgrade-cost">$18</span>
+            </button>
+          </section>
+        </section>
+
+        <aside class="side-panel">
+          <section class="score-card">
+            <div class="panel-head"><span class="eyebrow">CITY PERFORMANCE</span><span class="status-pill"><i></i> OPERATING</span></div>
+            <div class="score-main"><span>PEOPLE DELIVERED</span><strong id="score">000</strong><small>passengers this session</small></div>
+            <div class="best-score-row"><span>PERSONAL BEST</span><strong id="best-score">000</strong></div>
+            <div class="finance-badge"><span>OPERATING FUNDS</span><strong id="credits">$28</strong><small>+$2 per passenger delivered</small></div>
+            <div class="stat-grid">
+              <div><span>IN TRANSIT</span><strong id="in-transit">0</strong></div>
+              <div><span>WAITING</span><strong id="waiting">0</strong></div>
+              <div><span>ACTIVE LINES</span><strong id="active-lines">0 / 4</strong></div>
+              <div><span>CITY TIME</span><strong id="city-time">08:00</strong></div>
+            </div>
+            <div class="health-block">
+              <div class="health-label"><span>NETWORK FLOW</span><strong id="flow-label">Waiting for service</strong></div>
+              <div class="health-track"><i id="flow-bar"></i></div>
+              <small id="flow-note">Connect stations to begin moving passengers.</small>
+            </div>
+          </section>
+
+          <section class="traffic-card">
+            <div class="panel-head"><span class="eyebrow">CITY PULSE</span><span class="pulse-time">LIVE</span></div>
+            <div class="pulse-visual" aria-hidden="true"><div class="pulse-grid"></div><svg viewBox="0 0 300 78" preserveAspectRatio="none"><path class="pulse-area" d="M0 64 L18 60 L36 63 L54 43 L72 50 L90 34 L108 42 L126 29 L144 36 L162 17 L180 29 L198 22 L216 34 L234 14 L252 23 L270 11 L300 19 L300 78 L0 78Z"/><path class="pulse-line" d="M0 64 L18 60 L36 63 L54 43 L72 50 L90 34 L108 42 L126 29 L144 36 L162 17 L180 29 L198 22 L216 34 L234 14 L252 23 L270 11 L300 19"/></svg><span class="pulse-caption">Passenger demand</span></div>
+            <div class="phase-panel"><div class="phase-heading"><span class="eyebrow">SHIFT PROGRESSION</span><span id="phase-count">PHASE 01 / 05</span></div><strong id="phase-name">Morning setup</strong><div class="phase-track"><i id="phase-progress"></i></div><small id="phase-objective">Build your first service and deliver five passengers.</small><div class="mission-goal-row"><span id="phase-goal">Deliver 5 passengers</span><span id="phase-state">IN PROGRESS</span></div><div class="mission-track"><i id="mission-progress-bar"></i></div><div class="mission-meta"><span id="mission-progress-label">0 / 5</span><span id="mission-reward">REWARD +$8</span></div></div>
+            <div class="event-row"><span class="event-icon">◷</span><div><b id="event-title">Morning commute</b><small id="event-copy">The city is starting its day.</small></div><span class="event-state">ACTIVE</span></div>
+          </section>
+
+          <section class="control-card">
+            <div class="panel-head"><span class="eyebrow">SIMULATION CONTROL</span><span class="clock-icon">◷</span></div>
+            <div class="playback-row">
+              <button id="pause-button" class="pause-button" type="button"><span>Ⅱ</span> Pause</button>
+              <div class="speed-control" aria-label="Simulation speed">
+                <button data-speed="1" class="speed-button active" type="button">1×</button>
+                <button data-speed="2" class="speed-button" type="button">2×</button>
+                <button data-speed="3" class="speed-button" type="button">3×</button>
+              </div>
+            </div>
+            <p class="control-footnote">The city keeps moving while you plan. Pause to rethink a busy network.</p>
+          </section>
+
+          <section class="station-card">
+            <div class="panel-head"><span class="eyebrow">STATION INSPECTOR</span><span class="station-inspector-mark">⌖</span></div>
+            <div class="station-detail-head">
+              <span id="station-icon" class="station-detail-icon">⌖</span>
+              <div><strong id="station-name">Select a station</strong><small id="station-kind">Station overview</small></div>
+            </div>
+            <div class="station-detail-grid">
+              <div><span>WAITING QUEUE</span><strong id="station-queue">—</strong></div>
+              <div><span>CONNECTED LINES</span><strong id="station-lines">—</strong></div>
+            </div>
+            <div class="station-pressure-row"><span>LOCAL PRESSURE</span><strong id="station-pressure">AWAITING SELECTION</strong></div>
+            <p id="station-advice">Click any station on the map to inspect its passenger queue, serving lines, and local demand.</p>
+            <p id="tip-text" class="station-event-note">Tip: one well-connected interchange can be more useful than three isolated lines.</p>
+          </section>
+          <footer class="side-footer"><span>CITYFLOW <b>0.9.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
+        </aside>
+      </main>
+      <div class="bottom-credit"><span>AN ORIGINAL TRANSIT STRATEGY PROTOTYPE</span><span>PORT AZURE · BUILD 0.8.0</span></div>
+    </div>
+    <script type="module" src="/src/boot.ts"></script>
+  </body>
+</html>

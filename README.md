@@ -82,7 +82,7 @@ The prototype uses original code and procedurally drawn graphics/audio. No Mini 
 - Improved the readability of phase objectives, progress bars, route controls, and responsive layouts.
 
 
-## Current release — v0.10.0 — Route engine and rendering foundations
+## Previous release — v0.9.0 — Better first launch, phase identity and sound
 
 - Added a startup screen with a progress indicator that waits for the game engine's ready signal. If startup fails, the player gets a clear retry action.
 - Reworked the five shift descriptions and passenger destination weights so morning, event preparation, stadium arrivals, post-event returns, and the afternoon build-up create different travel patterns.
@@ -95,7 +95,7 @@ The prototype uses original code and procedurally drawn graphics/audio. No Mini 
 The loading percentage is an estimate of startup progress, not a byte-by-byte download meter. The screen only reaches 100% after the game module signals that the engine is ready.
 
 
-## v0.10.0 — Simulation and rendering foundations
+## Current release — v0.10.0 — Simulation and rendering foundations
 
 - Extracted shortest-path routing into `src/simulation/pathfinding.ts`.
 - Route planning now uses a snapshot of the active lines and caches route results until a route edit rebuilds that snapshot.

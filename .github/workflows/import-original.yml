@@ -1,0 +1,35 @@
+name: Import CITYFLOW repository history
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  mirror-original:
+    name: Mirror original Git history into this repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Mirror all Git refs from the original repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DESTINATION_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          git clone --mirror https://github.com/alv8888/mini-metro.git cityflow-mirror.git
+          SOURCE_HEAD="$(git --git-dir=cityflow-mirror.git rev-parse refs/heads/main)"
+
+          git --git-dir=cityflow-mirror.git remote add destination \
+            "https://x-access-token:${GH_TOKEN}@github.com/${DESTINATION_REPOSITORY}.git"
+
+          git --git-dir=cityflow-mirror.git push --mirror destination
+
+          DESTINATION_HEAD="$(git ls-remote destination refs/heads/main | awk '{print $1}')"
+          test "${SOURCE_HEAD}" = "${DESTINATION_HEAD}"
+
+          echo "Mirror verified at commit ${DESTINATION_HEAD}"
+          echo "Imported commit count: $(git --git-dir=cityflow-mirror.git rev-list --count refs/heads/main)"

@@ -2,8 +2,9 @@ import './style.css';
 import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
 import { directionForStation, nextStopIndex } from './simulation/trainMotion';
+import { selectPassengerTrip, type PassengerDistrictKind, type PassengerTripCandidate } from './simulation/passengerDemand';
 
-type StationKind = 'residential' | 'commerce' | 'culture' | 'civic' | 'leisure';
+type StationKind = PassengerDistrictKind;
 type Passenger = { id: number; origin: string; destination: string; route: string[] };
 type Station = {
   id: string; name: string; x: number; y: number; kind: StationKind;
@@ -253,56 +254,29 @@ function clearRoute(): void {
 }
 
 function spawnPassenger(): void {
-  const connected: Array<{ from: Station; to: Station; route: readonly string[] }> = [];
+  const connected: PassengerTripCandidate<Station>[] = [];
+
   for (const from of stations) {
     if (from.queue.length >= 16) continue;
+
     for (const to of stations) {
       if (from.id === to.id || to.queue.length >= 16) continue;
       const route = routePlanner.findRoute(from.id, to.id);
-      if (route && route.length >= 2) connected.push({ from, to, route });
-    }
-  }
-  if (!connected.length) return;
-  const options = connected.filter(({ from }) => from.queue.length < 10);
-  const pool = options.length ? options : connected;
-  const hour = cityHour();
-  const weighted = pool.map((choice) => {
-    let weight = 1;
-    if (hour >= 7 && hour < 10 && choice.from.kind === 'residential') weight *= 2.7;
-    if (hour >= 7 && hour < 10 && ['commerce', 'culture', 'civic'].includes(choice.to.kind)) weight *= 1.7;
-    if (hour >= 11 && hour < 14 && ['commerce', 'culture', 'leisure'].includes(choice.to.kind)) weight *= 1.45;
-    if (hour >= 16 && hour < 20 && ['commerce', 'culture', 'civic'].includes(choice.from.kind)) weight *= 2.2;
-    if (hour >= 16 && hour < 20 && choice.to.kind === 'residential') weight *= 1.8;
+      if (!route || route.length < 2) continue;
 
-    // Each shift phase changes where trips begin and end, not just the event label.
-    if (elapsed < 70) {
-      if (choice.from.kind === 'residential') weight *= 1.8;
-      if (['commerce', 'culture', 'civic'].includes(choice.to.kind)) weight *= 1.35;
-    } else if (elapsed < 100) {
-      if (choice.to.id === 'stadium') weight *= 3.4;
-      if (choice.from.id === 'stadium') weight *= 0.12;
-    } else if (elapsed < 160) {
-      if (choice.to.id === 'stadium') weight *= 7.2;
-      if (choice.from.id === 'stadium') weight *= 0.08;
-    } else if (elapsed < 205) {
-      if (choice.from.id === 'stadium') weight *= 8.4;
-      if (choice.to.id === 'stadium') weight *= 0.08;
-      if (choice.to.kind === 'residential') weight *= 1.4;
-    } else {
-      if (choice.from.kind !== 'residential') weight *= 1.55;
-      if (choice.to.kind === 'residential') weight *= 2.1;
-      if (choice.to.id === 'stadium') weight *= 0.5;
+      connected.push({
+        from: { id: from.id, kind: from.kind, queueLength: from.queue.length },
+        to: { id: to.id, kind: to.kind, queueLength: to.queue.length },
+        route,
+        payload: from,
+      });
     }
-    return { choice, weight };
-  });
-  const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
-  let roll = Math.random() * totalWeight;
-  let selected = weighted[0]!.choice;
-  for (const item of weighted) {
-    roll -= item.weight;
-    if (roll <= 0) { selected = item.choice; break; }
   }
-  selected.from.queue.push({
+
+  const selected = selectPassengerTrip(connected, { elapsed, hour: cityHour() });
+  if (!selected) return;
+
+  selected.payload.queue.push({
     id: passengerId++,
     origin: selected.from.id,
     destination: selected.to.id,

@@ -1,4 +1,11 @@
-## Current release — v0.11.0 — Passenger demand system
+## Current release — v0.12.0 — Unified shift phase model
+
+- All five phase IDs, timing boundaries, display names, objectives and mission goals now come from one shared configuration.
+- Passenger demand, HUD missions, event presentation and the adaptive soundtrack use the same phase lookup.
+- Phase start times are inclusive and end times are exclusive. The last phase remains active for the remainder of an endless run.
+- The existing weights and time windows are retained. Difficulty balancing will be tuned separately after scenario playtests.
+
+## Previous release — v0.11.0 — Passenger demand system
 
 - Passenger trip weighting is separated from passenger creation and accepts elapsed shift time and city hour as explicit inputs.
 - The five shift phases modify passenger origins and destinations, while the selector prioritizes lower-pressure origins when alternatives are available.

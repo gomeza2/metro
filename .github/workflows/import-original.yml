@@ -3,6 +3,7 @@ name: Import CITYFLOW repository history
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write

@@ -398,150 +398,107 @@ function endGame(station: Station): void {
 }
 
 function drawBackground(): void {
-  ctx.fillStyle = '#e9ece5';
+  // The city artwork is owned by visuals.ts. The game frame only establishes
+  // a stable base before the cached map layer is composited.
+  ctx.fillStyle = '#edf1e8';
   ctx.fillRect(0, 0, WORLD_W, WORLD_H);
-
-  // Quiet city blocks: visual texture only, deliberately not a detailed city-builder.
-  const blocks = [
-    [30, 35, 155, 95], [210, 32, 145, 90], [390, 25, 125, 63], [565, 40, 145, 80],
-    [760, 30, 160, 80], [960, 35, 190, 82], [40, 500, 130, 88], [405, 535, 100, 58],
-    [680, 565, 115, 75], [930, 640, 170, 55], [200, 680, 145, 45], [1020, 385, 125, 72],
-  ];
-  for (let i = 0; i < blocks.length; i += 1) {
-    const [x, y, w, h] = blocks[i]!;
-    ctx.fillStyle = i % 3 === 0 ? '#dfe5dc' : '#e2e7df';
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 9);
-    ctx.fill();
-    ctx.strokeStyle = '#d6ddd4';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    for (let j = 0; j < 3; j += 1) {
-      ctx.fillStyle = '#d3dbd2';
-      ctx.fillRect(x + 15 + j * 35, y + 14, 17, 5);
-    }
-  }
-
-  // Parks and water give the map a recognizable geography.
-  ctx.fillStyle = '#d3e0d3';
-  ctx.beginPath();
-  ctx.roundRect(210, 250, 205, 105, 28);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.roundRect(900, 545, 150, 85, 22);
-  ctx.fill();
-
-  ctx.fillStyle = '#d4e4e4';
-  ctx.beginPath();
-  ctx.moveTo(1100, 0);
-  ctx.lineTo(1200, 0);
-  ctx.lineTo(1200, 760);
-  ctx.lineTo(1120, 760);
-  ctx.bezierCurveTo(1060, 655, 1140, 550, 1080, 455);
-  ctx.bezierCurveTo(1030, 370, 1120, 265, 1050, 170);
-  ctx.bezierCurveTo(1010, 110, 1060, 45, 1100, 0);
-  ctx.fill();
-
-  ctx.strokeStyle = '#c8d9da';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(1090, 0);
-  ctx.bezierCurveTo(1050, 95, 1070, 135, 1085, 190);
-  ctx.bezierCurveTo(1150, 290, 1060, 375, 1110, 470);
-  ctx.bezierCurveTo(1160, 560, 1085, 660, 1132, 760);
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(169,181,171,.35)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([3, 9]);
-  for (let x = 25; x < WORLD_W; x += 50) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); ctx.stroke();
-  }
-  for (let y = 25; y < WORLD_H; y += 50) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); ctx.stroke();
-  }
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = '#9baa9c';
-  ctx.font = '600 10px Inter, sans-serif';
-  ctx.letterSpacing = '2px';
-  ctx.fillText('WEST DISTRICT', 44, 165);
-  ctx.fillText('OLD TOWN', 435, 375);
-  ctx.fillText('EASTBANK', 900, 315);
-  ctx.fillText('SOUTH QUAY', 505, 700);
-  ctx.fillText('THE GREEN', 260, 308);
-  ctx.letterSpacing = '0px';
 }
+
 
 function drawLine(line: MetroLine): void {
   if (line.stations.length < 2) return;
   const points = line.stations.map(stationById);
+
+  ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = 'rgba(255,255,255,.88)';
-  ctx.lineWidth = 15;
   ctx.beginPath();
   ctx.moveTo(points[0]!.x, points[0]!.y);
   for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
+  ctx.shadowColor = 'rgba(30,55,41,.2)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
+  ctx.strokeStyle = 'rgba(255,255,250,.96)';
+  ctx.lineWidth = 19;
   ctx.stroke();
-
+  ctx.shadowColor = 'transparent';
   ctx.strokeStyle = line.color;
-  ctx.lineWidth = 8;
-  ctx.beginPath();
-  ctx.moveTo(points[0]!.x, points[0]!.y);
-  for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
+  ctx.lineWidth = 10;
   ctx.stroke();
 
   if (line.id === selectedLine) {
-    ctx.strokeStyle = 'rgba(255,255,255,.72)';
+    ctx.strokeStyle = 'rgba(255,255,255,.92)';
     ctx.lineWidth = 2;
-    ctx.setLineDash([3, 7]);
-    ctx.beginPath();
-    ctx.moveTo(points[0]!.x, points[0]!.y);
-    for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
+    ctx.setLineDash([3, 9]);
     ctx.stroke();
     ctx.setLineDash([]);
   }
+  ctx.restore();
 }
+
+
+type StationLabelAnchor = 'left' | 'center' | 'right';
+
+const STATION_LABEL_LAYOUT: Record<string, { dx: number; dy: number; anchor: StationLabelAnchor }> = {
+  harbor: { dx: -18, dy: 2, anchor: 'right' },
+  gardens: { dx: -17, dy: -22, anchor: 'right' },
+  north: { dx: 0, dy: -31, anchor: 'center' },
+  museum: { dx: 0, dy: -34, anchor: 'center' },
+  market: { dx: -18, dy: 30, anchor: 'right' },
+  civic: { dx: 18, dy: 29, anchor: 'left' },
+  east: { dx: 22, dy: -15, anchor: 'left' },
+  university: { dx: 0, dy: -30, anchor: 'center' },
+  stadium: { dx: 0, dy: -53, anchor: 'center' },
+  heights: { dx: 22, dy: 0, anchor: 'left' },
+  clinic: { dx: 17, dy: 33, anchor: 'left' },
+  south: { dx: 0, dy: 39, anchor: 'center' },
+  orchard: { dx: -18, dy: 27, anchor: 'right' },
+  airport: { dx: -8, dy: -32, anchor: 'center' },
+};
 
 function drawStation(station: Station): void {
   const connectedLines = lines.filter((line) => line.stations.includes(station.id));
   const selected = lines[selectedLine]?.stations.includes(station.id) ?? false;
   const focused = focusedStation?.id === station.id;
   const hovered = hoveredStation?.id === station.id;
-  const radius = connectedLines.length > 1 ? 13 : 10;
   const palette: Record<StationKind, string> = {
-    residential: '#759b83', commerce: '#d09b58', culture: '#7d8fb2', civic: '#6b9e9a', leisure: '#bd8c72',
+    residential: '#719b7c',
+    commerce: '#d19b58',
+    culture: '#7b91b6',
+    civic: '#579b98',
+    leisure: '#bd846e',
   };
   const accent = palette[station.kind];
+  const radius = connectedLines.length > 1 ? 13 : 11;
 
-  if (station.queue.length > 0 || hovered || selected) {
-    const glow = ctx.createRadialGradient(station.x, station.y, 5, station.x, station.y, 39);
-    glow.addColorStop(0, station.queue.length > 7 ? 'rgba(220,126,99,.24)' : 'rgba(255,255,255,.32)');
+  if (station.queue.length > 0 || hovered || selected || focused) {
+    const glow = ctx.createRadialGradient(station.x, station.y, 5, station.x, station.y, 42);
+    glow.addColorStop(0, station.queue.length > 7 ? 'rgba(222,125,89,.27)' : 'rgba(255,255,255,.42)');
     glow.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(station.x, station.y, 39, 0, Math.PI * 2);
+    ctx.arc(station.x, station.y, 42, 0, Math.PI * 2);
     ctx.fill();
   }
 
   if (hovered || selected || focused) {
     ctx.beginPath();
-    ctx.arc(station.x, station.y, focused ? 26 : 23, 0, Math.PI * 2);
-    ctx.fillStyle = hovered ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.55)';
+    ctx.arc(station.x, station.y, focused ? 27 : 24, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,250,.68)';
     ctx.fill();
-    ctx.strokeStyle = focused ? '#344e42' : selected ? accent : 'rgba(255,255,255,.9)';
-    ctx.lineWidth = focused ? 2 : 1.5;
+    ctx.strokeStyle = focused ? '#294b38' : selected ? accent : '#fffefa';
+    ctx.lineWidth = focused ? 2.5 : 1.8;
     ctx.stroke();
   }
 
+  // White marker, district-color ring and dark center stay readable over every district.
   ctx.save();
-  ctx.shadowColor = 'rgba(39,58,49,.18)';
-  ctx.shadowBlur = 9;
+  ctx.shadowColor = 'rgba(35,54,41,.22)';
+  ctx.shadowBlur = 10;
   ctx.shadowOffsetY = 3;
   ctx.beginPath();
   ctx.arc(station.x, station.y, radius + 5, 0, Math.PI * 2);
-  ctx.fillStyle = '#fbfbf6';
+  ctx.fillStyle = '#fffefa';
   ctx.fill();
   ctx.restore();
 
@@ -550,78 +507,103 @@ function drawStation(station: Station): void {
   ctx.fillStyle = accent;
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(station.x, station.y, radius - 2, 0, Math.PI * 2);
-  ctx.fillStyle = station.overload > 4 ? '#d76d57' : '#314b42';
+  ctx.arc(station.x, station.y, radius - 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#244334';
   ctx.fill();
 
-  ctx.fillStyle = '#fbfbf5';
-  ctx.font = '700 9px "DM Sans", sans-serif';
+  const symbols: Record<StationKind, string> = {
+    residential: '⌂',
+    commerce: '¤',
+    culture: '✳',
+    civic: '+',
+    leisure: '◇',
+  };
+  ctx.fillStyle = '#f6f7ed';
+  ctx.font = '700 10px Inter, "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const symbols: Record<StationKind, string> = {
-    residential: '⌂', commerce: '¤', culture: '✳', civic: '+', leisure: '◇',
-  };
-  ctx.fillText(symbols[station.kind], station.x, station.y + 0.5);
+  ctx.fillText(symbols[station.kind], station.x, station.y + .5);
 
   if (connectedLines.length > 1) {
     connectedLines.forEach((line, index) => {
       const angle = -Math.PI / 2 + (Math.PI * 2 * index) / connectedLines.length;
       ctx.beginPath();
-      ctx.arc(station.x, station.y, radius + 8, angle, angle + 0.65);
+      ctx.arc(station.x, station.y, radius + 9, angle, angle + .76);
       ctx.strokeStyle = line.color;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5;
       ctx.lineCap = 'round';
       ctx.stroke();
     });
   }
 
-  if (station.queue.length > 0) {
-    const visible = Math.min(station.queue.length, 8);
-    for (let i = 0; i < visible; i += 1) {
-      const angle = -Math.PI / 2 + (Math.PI * 2 * i) / Math.max(visible, 1);
-      const dotX = station.x + Math.cos(angle) * 23;
-      const dotY = station.y + Math.sin(angle) * 23;
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#fbfbf5';
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, 2.25, 0, Math.PI * 2);
-      ctx.fillStyle = station.queue[i]?.id ? '#d29c59' : '#fff';
-      ctx.fill();
-    }
+  // Queue dots sit close to the station so they read as local passenger demand.
+  const visibleQueue = Math.min(station.queue.length, 5);
+  for (let index = 0; index < visibleQueue; index += 1) {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * index) / Math.max(visibleQueue, 1);
+    const dotX = station.x + Math.cos(angle) * 23;
+    const dotY = station.y + Math.sin(angle) * 23;
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#fffefa';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, 2.4, 0, Math.PI * 2);
+    ctx.fillStyle = '#d9944e';
+    ctx.fill();
   }
 
   if (station.overload > 0) {
     ctx.beginPath();
-    ctx.arc(station.x, station.y, 19, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(station.overload / 17, 1));
-    ctx.strokeStyle = '#dc8069';
+    ctx.arc(station.x, station.y, 20, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(station.overload / 17, 1));
+    ctx.strokeStyle = '#d66f5d';
     ctx.lineWidth = 3.5;
     ctx.stroke();
   }
 
+  // Each station has a deliberate label anchor to stop names colliding with nearby nodes.
+  const label = STATION_LABEL_LAYOUT[station.id] ?? { dx: 18, dy: -16, anchor: 'left' as const };
+  ctx.font = '700 12px Inter, "Segoe UI", sans-serif';
+  ctx.textAlign = label.anchor;
+  ctx.textBaseline = 'middle';
+  const labelX = station.x + label.dx;
+  const labelY = station.y + label.dy;
+  const labelWidth = ctx.measureText(station.name).width;
+  const showQueueCount = station.queue.length >= 4;
+  const boxWidth = labelWidth + 18;
+  const boxHeight = showQueueCount ? 35 : 25;
+  const boxX = label.anchor === 'left'
+    ? labelX - 9
+    : label.anchor === 'right'
+      ? labelX - labelWidth - 9
+      : labelX - labelWidth / 2 - 9;
+  const boxY = labelY - 13;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(35,54,41,.12)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
+  ctx.beginPath();
+  ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 7);
+  ctx.fillStyle = 'rgba(255,255,250,.97)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(190,207,190,.85)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.fillStyle = '#294538';
+  ctx.font = '700 12px Inter, "Segoe UI", sans-serif';
+  ctx.textAlign = label.anchor;
+  ctx.fillText(station.name, labelX, labelY);
+  if (showQueueCount) {
+    ctx.fillStyle = station.queue.length >= 10 ? '#bb6752' : '#9a7442';
+    ctx.font = '700 8px ui-monospace, monospace';
+    ctx.fillText(`${station.queue.length} WAITING`, labelX, labelY + 13);
+  }
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = '600 12px "DM Sans", sans-serif';
-  const labelWidth = ctx.measureText(station.name).width;
-  const labelX = station.x + 19;
-  const labelY = station.y - 16;
-  ctx.save();
-  ctx.shadowColor = 'rgba(48,65,55,.08)';
-  ctx.shadowBlur = 7;
-  ctx.fillStyle = 'rgba(251,251,246,.94)';
-  ctx.beginPath();
-  ctx.roundRect(labelX - 6, labelY - 12, labelWidth + 15, 21, 6);
-  ctx.fill();
-  ctx.restore();
-  ctx.fillStyle = '#3f554b';
-  ctx.fillText(station.name, labelX, labelY + 2);
-  if (station.queue.length >= 4) {
-    ctx.fillStyle = '#bf765f';
-    ctx.font = '700 8px "DM Mono", monospace';
-    ctx.fillText(String(station.queue.length) + ' WAITING', labelX, labelY + 15);
-  }
 }
+
 
 function drawTrain(line: MetroLine, train: Train): void {
   if (line.stations.length < 2) return;

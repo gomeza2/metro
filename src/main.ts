@@ -1,6 +1,7 @@
 import './style.css';
 import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
+import { directionForStation, nextStopIndex } from './simulation/trainMotion';
 
 type StationKind = 'residential' | 'commerce' | 'culture' | 'civic' | 'leisure';
 type Passenger = { id: number; origin: string; destination: string; route: string[] };
@@ -102,18 +103,12 @@ const expressCost = () => 10 + (expressLevel - 1) * 12;
 const dispatchCost = (line: MetroLine) => 18 + Math.max(0, line.fleetSize - 1) * 16;
 
 function normalizeTrainDirection(line: MetroLine, train: Train): void {
-  const lastIndex = line.stations.length - 1;
-  if (train.stationIndex <= 0 && train.direction === -1) train.direction = 1;
-  else if (train.stationIndex >= lastIndex && train.direction === 1) train.direction = -1;
+  train.direction = directionForStation(train.stationIndex, train.direction, line.stations.length);
 }
 
 function nextTrainStop(line: MetroLine, train: Train): Station | null {
-  if (line.stations.length < 2) return null;
-  let targetIndex = train.stationIndex + train.direction;
-  if (targetIndex < 0 || targetIndex >= line.stations.length) {
-    targetIndex = train.stationIndex - train.direction;
-  }
-  const id = line.stations[targetIndex];
+  const targetIndex = nextStopIndex(train.stationIndex, train.direction, line.stations.length);
+  const id = targetIndex === null ? undefined : line.stations[targetIndex];
   return id ? stationById(id) : null;
 }
 
@@ -391,36 +386,7 @@ function updateSimulation(dt: number): void {
     if (station.overload >= 17) endGame(station);
   }
 
-  if (elapsed >= 70 && elapsed < 100) {
-    $('#event-title').textContent = 'Match starts soon';
-    $('#event-copy').textContent = 'Grand Stadium · prepare extra service.';
-    $('.event-state').textContent = 'UP NEXT';
-    $('#tip-text').textContent = 'A major event is approaching at Grand Stadium. Connect it early so passengers have time to arrive.';
-  } else if (elapsed >= 100 && elapsed < 160) {
-    $('#event-title').textContent = 'Grand Stadium event';
-    $('#event-copy').textContent = 'Passenger demand is surging near the arena.';
-    $('.event-state').textContent = 'LIVE';
-    $('#tip-text').textContent = 'The stadium is attracting extra passengers. A direct connection can reduce pressure on nearby stations.';
-  } else if (elapsed >= 160 && elapsed < 205) {
-    $('#event-title').textContent = 'Crowds heading home';
-    $('#event-copy').textContent = 'The post-match rush is moving across town.';
-    $('.event-state').textContent = 'RUSH HOUR';
-    $('#tip-text').textContent = 'Passengers are now leaving Grand Stadium. Keep a direct route toward residential districts open.';
-  } else if (cityHour() >= 16) {
-    $('#event-title').textContent = 'Evening commute';
-    $('#event-copy').textContent = 'Commuters are heading back across the city.';
-    $('.event-state').textContent = 'ACTIVE';
-    $('#tip-text').textContent = 'The evening commute is spreading across the network. Add a train or strengthen the busiest route.';
-  } else if (elapsed >= 205) {
-    $('#event-title').textContent = 'Afternoon build-up';
-    $('#event-copy').textContent = 'Commuter demand is building before the evening peak.';
-    $('.event-state').textContent = 'BUILDING';
-    $('#tip-text').textContent = 'Use this quieter window to rebalance routes before evening departures begin.';
-  } else if (elapsed > 100) {
-    $('#event-title').textContent = 'City getting busier';
-    $('#event-copy').textContent = 'Demand is rising. Keep transfer stations moving.';
-    $('.event-state').textContent = 'ACTIVE';
-  }
+
 }
 
 function endGame(station: Station): void {
@@ -778,11 +744,89 @@ function updatePhaseMission(phaseIndex: number): void {
   $('#mission-reward').textContent = claimed ? 'REWARD CLAIMED' : `REWARD +${PHASE_REWARD}`;
 }
 
+type CityEventPresentation = {
+  key: string;
+  title: string;
+  copy: string;
+  state: string;
+  tip?: string;
+};
+
+let lastDisplayedCityEvent: string | null = null;
+
+function updateCityEvent(): void {
+  let event: CityEventPresentation;
+
+  if (elapsed >= 70 && elapsed < 100) {
+    event = {
+      key: 'stadium-preparation',
+      title: 'Match starts soon',
+      copy: 'Grand Stadium · prepare extra service.',
+      state: 'UP NEXT',
+      tip: 'A major event is approaching at Grand Stadium. Connect it early so passengers have time to arrive.',
+    };
+  } else if (elapsed >= 100 && elapsed < 160) {
+    event = {
+      key: 'stadium-arrival',
+      title: 'Grand Stadium event',
+      copy: 'Passenger demand is surging near the arena.',
+      state: 'LIVE',
+      tip: 'The stadium is attracting extra passengers. A direct connection can reduce pressure on nearby stations.',
+    };
+  } else if (elapsed >= 160 && elapsed < 205) {
+    event = {
+      key: 'stadium-return',
+      title: 'Crowds heading home',
+      copy: 'The post-match rush is moving across town.',
+      state: 'RUSH HOUR',
+      tip: 'Passengers are now leaving Grand Stadium. Keep a direct route toward residential districts open.',
+    };
+  } else if (cityHour() >= 16) {
+    event = {
+      key: 'evening-commute',
+      title: 'Evening commute',
+      copy: 'Commuters are heading back across the city.',
+      state: 'ACTIVE',
+      tip: 'The evening commute is spreading across the network. Add a train or strengthen the busiest route.',
+    };
+  } else if (elapsed >= 205) {
+    event = {
+      key: 'afternoon-build-up',
+      title: 'Afternoon build-up',
+      copy: 'Commuter demand is building before the evening peak.',
+      state: 'BUILDING',
+      tip: 'Use this quieter window to rebalance routes before evening departures begin.',
+    };
+  } else if (elapsed > 100) {
+    event = {
+      key: 'city-getting-busier',
+      title: 'City getting busier',
+      copy: 'Demand is rising. Keep transfer stations moving.',
+      state: 'ACTIVE',
+    };
+  } else {
+    event = {
+      key: 'morning-commute',
+      title: 'Morning commute',
+      copy: 'The city is starting its day.',
+      state: 'ACTIVE',
+    };
+  }
+
+  if (event.key === lastDisplayedCityEvent) return;
+  lastDisplayedCityEvent = event.key;
+  $('#event-title').textContent = event.title;
+  $('#event-copy').textContent = event.copy;
+  $('.event-state').textContent = event.state;
+  if (event.tip) $('#tip-text').textContent = event.tip;
+}
+
 function updateHUD(): void {
   $('#score').textContent = String(score).padStart(3, '0');
   $('#best-score').textContent = String(bestScore).padStart(3, '0');
   const phaseIndex = Math.max(0, SHIFT_PHASES.findIndex((phase, index) => elapsed >= phase.start && (elapsed < phase.end || index === SHIFT_PHASES.length - 1)));
   updatePhaseMission(phaseIndex);
+  updateCityEvent();
   $('#in-transit').textContent = String(totalOnTrains());
   $('#waiting').textContent = String(totalWaiting());
   $('#active-lines').textContent = `${activeLines()} / 4`;
@@ -1016,6 +1060,7 @@ function restartGame(): void {
   stadiumArrivalsDelivered = 0;
   stadiumDeparturesDelivered = 0;
   completedPhaseObjectives.clear();
+  lastDisplayedCityEvent = null;
   paused = false;
   simulationSpeed = 1;
   capacityLevel = 1;

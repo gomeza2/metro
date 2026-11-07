@@ -1,4 +1,13 @@
-## Current release — v0.14.0 — Fixed-step simulation
+## Current release — v0.15.0 — Visual clarity and map redesign
+
+- Rebuilt the interface around a consistent high-contrast dark transit-console theme with a bright, readable map.
+- Replaced the loose city illustration with a more coherent Port Azure map: coastline, parks, main roads, a smaller set of landmarks and clearer district labels.
+- Gave every station a deliberate label position so nearby names are less likely to overlap. Station markers now have a consistent white marker, district ring and dark center.
+- The menu map now uses the same city geography and fourteen station positions as the playable map, with one clearly marked sample service instead of four unrelated decorative routes.
+- Removed the static passenger-demand chart because it was decorative rather than connected to live simulation data.
+- Reworked the opening hint and control labels so a new player can understand the first route: choose a line, select two station markers, then watch the train run.
+
+## Previous release — v0.14.0 — Fixed-step simulation
 
 - Gameplay advances in 1/60-second simulation updates instead of applying one variable delta per rendered frame.
 - The 1x, 2x and 3x controls scale accumulated simulation time while preserving a consistent update size.

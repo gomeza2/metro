@@ -90,3 +90,6 @@ The prototype uses original code and procedurally drawn graphics/audio. No Mini 
 - Added optional Spotify search shortcuts for players who prefer their own music. Spotify opens in a separate tab; it is not required and does not replace the game's original soundtrack.
 - Reduced DOM-heavy HUD refreshes while keeping the Canvas animation on the display refresh cycle.
 - Made train next-stop lookup read-only so drawing a train cannot change its simulation direction.
+
+
+The loading percentage is an estimate of startup progress, not a byte-by-byte download meter. The screen only reaches 100% after the game module signals that the engine is ready.

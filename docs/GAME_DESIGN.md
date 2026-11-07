@@ -1,4 +1,11 @@
-## Current release — v0.10.0 — Route engine and rendering foundations
+## Current release — v0.11.0 — Passenger demand system
+
+- Passenger trip weighting is separated from passenger creation and accepts elapsed shift time and city hour as explicit inputs.
+- The five shift phases modify passenger origins and destinations, while the selector prioritizes lower-pressure origins when alternatives are available.
+- Randomness is injectable for deterministic tests; live gameplay continues to use the browser's standard random source.
+- Existing demand factors are preserved during extraction. Tuning is treated as a separate balancing task so architecture changes do not silently change game difficulty.
+
+## Previous release — v0.10.0 — Route engine and rendering foundations
 
 - Shortest-path planning now lives in a standalone simulation module with an immutable network snapshot and per-pair route cache.
 - Rebuild the route planner only after route edits; passengers receive their own path arrays so route progression cannot mutate cached paths.

@@ -43,14 +43,17 @@ test('handles loops without visiting a station twice', () => {
   assert.equal(new Set(route).size, route.length);
 });
 
-test('returns independent arrays so a passenger cannot mutate the route cache', () => {
+test('shares immutable cached routes without exposing them to passenger mutation', () => {
   const planner = createRoutePlanner(stations(['A', 'B', 'C']), [
     { stations: ['A', 'B', 'C'] },
   ]);
 
-  const passengerRoute = planner.findRoute('A', 'C');
-  passengerRoute?.shift();
+  const first = planner.findRoute('A', 'C');
+  const second = planner.findRoute('A', 'C');
 
+  assert.equal(first, second);
+  assert.equal(Object.isFrozen(first), true);
+  assert.throws(() => first?.shift(), TypeError);
   assert.deepEqual(planner.findRoute('A', 'C'), ['A', 'B', 'C']);
 });
 
@@ -61,4 +64,16 @@ test('planner is a snapshot and does not change when source route arrays are edi
   line.stations.push('C');
 
   assert.equal(planner.findRoute('A', 'C'), null);
+});
+
+test('a new planner reflects route edits while the old snapshot remains unchanged', () => {
+  const line = { stations: ['A', 'B'] };
+  const networkStations = stations(['A', 'B', 'C']);
+  const beforeEdit = createRoutePlanner(networkStations, [line]);
+
+  line.stations.push('C');
+  const afterEdit = createRoutePlanner(networkStations, [line]);
+
+  assert.equal(beforeEdit.findRoute('A', 'C'), null);
+  assert.deepEqual(afterEdit.findRoute('A', 'C'), ['A', 'B', 'C']);
 });

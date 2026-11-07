@@ -3,6 +3,7 @@ import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
 import { directionForStation, nextStopIndex } from './simulation/trainMotion';
 import { selectPassengerTrip, type PassengerDistrictKind, type PassengerTripCandidate } from './simulation/passengerDemand';
+import { getShiftPhase, getShiftPhaseIndex, SHIFT_PHASES } from './simulation/shiftPhases';
 
 type StationKind = PassengerDistrictKind;
 type Passenger = { id: number; origin: string; destination: string; route: string[] };
@@ -20,13 +21,6 @@ type MetroLine = {
 const WORLD_W = 1200;
 const WORLD_H = 760;
 const COLORS = ['#e47762', '#5d92bd', '#6a9c81', '#d5a14e'];
-const SHIFT_PHASES = [
-  { start: 0, end: 70, name: 'Morning network', objective: 'Connect the first districts and establish reliable passenger service.', goal: 'Deliver 5 passengers' },
-  { start: 70, end: 100, name: 'Stadium preparation', objective: 'Build a reliable link to Grand Stadium before the crowd arrives.', goal: 'Connect Grand Stadium to a metro line' },
-  { start: 100, end: 160, name: 'Stadium arrival rush', objective: 'Carry at least five passengers into Grand Stadium.', goal: 'Deliver 5 passengers to Grand Stadium' },
-  { start: 160, end: 205, name: 'Post-event return', objective: 'Move the stadium crowd back toward its destinations.', goal: 'Deliver 5 passengers from Grand Stadium' },
-  { start: 205, end: 320, name: 'Afternoon & evening commute', objective: 'Balance the growing return commute and reach 55 total deliveries.', goal: 'Deliver 55 passengers in total' },
-];
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
 const ctx = canvas.getContext('2d')!;
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
@@ -734,63 +728,63 @@ type CityEventPresentation = {
 let lastDisplayedCityEvent: string | null = null;
 
 function updateCityEvent(): void {
+  const phase = getShiftPhase(elapsed);
   let event: CityEventPresentation;
 
-  if (elapsed >= 70 && elapsed < 100) {
-    event = {
-      key: 'stadium-preparation',
-      title: 'Match starts soon',
-      copy: 'Grand Stadium · prepare extra service.',
-      state: 'UP NEXT',
-      tip: 'A major event is approaching at Grand Stadium. Connect it early so passengers have time to arrive.',
-    };
-  } else if (elapsed >= 100 && elapsed < 160) {
-    event = {
-      key: 'stadium-arrival',
-      title: 'Grand Stadium event',
-      copy: 'Passenger demand is surging near the arena.',
-      state: 'LIVE',
-      tip: 'The stadium is attracting extra passengers. A direct connection can reduce pressure on nearby stations.',
-    };
-  } else if (elapsed >= 160 && elapsed < 205) {
-    event = {
-      key: 'stadium-return',
-      title: 'Crowds heading home',
-      copy: 'The post-match rush is moving across town.',
-      state: 'RUSH HOUR',
-      tip: 'Passengers are now leaving Grand Stadium. Keep a direct route toward residential districts open.',
-    };
-  } else if (cityHour() >= 16) {
-    event = {
-      key: 'evening-commute',
-      title: 'Evening commute',
-      copy: 'Commuters are heading back across the city.',
-      state: 'ACTIVE',
-      tip: 'The evening commute is spreading across the network. Add a train or strengthen the busiest route.',
-    };
-  } else if (elapsed >= 205) {
-    event = {
-      key: 'afternoon-build-up',
-      title: 'Afternoon build-up',
-      copy: 'Commuter demand is building before the evening peak.',
-      state: 'BUILDING',
-      tip: 'Use this quieter window to rebalance routes before evening departures begin.',
-    };
-  } else if (elapsed > 100) {
-    event = {
-      key: 'city-getting-busier',
-      title: 'City getting busier',
-      copy: 'Demand is rising. Keep transfer stations moving.',
-      state: 'ACTIVE',
-    };
-  } else {
-    event = {
-      key: 'morning-commute',
-      title: 'Morning commute',
-      copy: 'The city is starting its day.',
-      state: 'ACTIVE',
-      tip: 'Tip: one well-connected interchange can be more useful than three isolated lines.',
-    };
+  switch (phase.id) {
+    case 'morning-network':
+      event = {
+        key: 'morning-commute',
+        title: 'Morning commute',
+        copy: 'The city is starting its day.',
+        state: 'ACTIVE',
+        tip: 'Tip: one well-connected interchange can be more useful than three isolated lines.',
+      };
+      break;
+    case 'stadium-preparation':
+      event = {
+        key: 'stadium-preparation',
+        title: 'Match starts soon',
+        copy: 'Grand Stadium · prepare extra service.',
+        state: 'UP NEXT',
+        tip: 'A major event is approaching at Grand Stadium. Connect it early so passengers have time to arrive.',
+      };
+      break;
+    case 'stadium-arrival':
+      event = {
+        key: 'stadium-arrival',
+        title: 'Grand Stadium event',
+        copy: 'Passenger demand is surging near the arena.',
+        state: 'LIVE',
+        tip: 'The stadium is attracting extra passengers. A direct connection can reduce pressure on nearby stations.',
+      };
+      break;
+    case 'post-event-return':
+      event = {
+        key: 'stadium-return',
+        title: 'Crowds heading home',
+        copy: 'The post-match rush is moving across town.',
+        state: 'RUSH HOUR',
+        tip: 'Passengers are now leaving Grand Stadium. Keep a direct route toward residential districts open.',
+      };
+      break;
+    case 'afternoon-commute':
+      event = cityHour() >= 16
+        ? {
+            key: 'evening-commute',
+            title: 'Evening commute',
+            copy: 'Commuters are heading back across the city.',
+            state: 'ACTIVE',
+            tip: 'The evening commute is spreading across the network. Add a train or strengthen the busiest route.',
+          }
+        : {
+            key: 'afternoon-build-up',
+            title: 'Afternoon build-up',
+            copy: 'Commuter demand is building before the evening peak.',
+            state: 'BUILDING',
+            tip: 'Use this quieter window to rebalance routes before evening departures begin.',
+          };
+      break;
   }
 
   if (event.key === lastDisplayedCityEvent) return;
@@ -804,7 +798,7 @@ function updateCityEvent(): void {
 function updateHUD(): void {
   $('#score').textContent = String(score).padStart(3, '0');
   $('#best-score').textContent = String(bestScore).padStart(3, '0');
-  const phaseIndex = Math.max(0, SHIFT_PHASES.findIndex((phase, index) => elapsed >= phase.start && (elapsed < phase.end || index === SHIFT_PHASES.length - 1)));
+  const phaseIndex = getShiftPhaseIndex(elapsed);
   updatePhaseMission(phaseIndex);
   updateCityEvent();
   $('#in-transit').textContent = String(totalOnTrains());
@@ -935,9 +929,7 @@ const SOUNDTRACK_PHASES = [
 function scheduleSoundtrackStep(): void {
   if (!soundOn || !soundContext || !soundMaster) return;
 
-  const phaseIndex = Math.max(0, SHIFT_PHASES.findIndex((phase, index) =>
-    elapsed >= phase.start && (elapsed < phase.end || index === SHIFT_PHASES.length - 1)
-  ));
+  const phaseIndex = getShiftPhaseIndex(elapsed);
   const mood = SOUNDTRACK_PHASES[phaseIndex] ?? SOUNDTRACK_PHASES[0];
   const pressure = Math.max(0, Math.min(1, totalWaiting() / 34));
   const semitone = mood.notes[soundStep % mood.notes.length] ?? 0;

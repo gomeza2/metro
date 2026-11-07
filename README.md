@@ -105,9 +105,17 @@ The loading percentage is an estimate of startup progress, not a byte-by-byte do
 - GitHub Actions runs the simulation tests before the TypeScript/Vite production build.
 
 
-## Current release — v0.11.0 — Passenger demand system
+## Previous release — v0.11.0 — Passenger demand system
 
 - Extracted time-of-day and shift-phase passenger trip weighting into `src/simulation/passengerDemand.ts`.
 - Passenger demand selection now receives an injectable random source, allowing phase behavior and queue-pressure preferences to be tested deterministically.
 - Preserved the existing demand tuning while moving morning departures, stadium preparation, event arrivals, post-event returns, and late-shift residential trips out of `main.ts`.
 - Added tests for each phase, queue-pressure fallback, weighted selection, random boundaries, and empty candidate pools.
+
+
+## Current release — v0.12.0 — Central shift phase model
+
+- Added `src/simulation/shiftPhases.ts` as the single source of truth for the five phase IDs, boundaries, names, objectives and goals.
+- The mission HUD, event panel, soundtrack and passenger-demand system now resolve the active phase through the same phase helper.
+- Kept the previous time boundaries and demand multipliers unchanged; this is a consistency and correctness refactor, not a difficulty rebalance.
+- Added seven boundary tests for inclusive/exclusive transitions, the final phase continuing beyond its nominal end, and invalid elapsed values.

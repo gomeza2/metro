@@ -11,6 +11,7 @@ This document records the current boundaries and the order in which the original
 - `src/simulation/passengerDemand.ts` owns phase-aware trip weighting and injectable weighted candidate selection.
 - `src/simulation/shiftPhases.ts` is the single source of truth for phase IDs, boundaries, mission copy and current-phase lookup.
 - `src/simulation/passengerOperations.ts` owns pure boarding selection and arrival classification for continuing, transferring and delivered passengers.
+- `src/simulation/fixedStepClock.ts` converts variable render-frame deltas into bounded, fixed-size simulation updates.
 - `src/visuals.ts` owns the fixed Port Azure illustration and its animated river highlights.
 - `src/style.css` owns the responsive interface and loading presentation.
 - `test/` contains Node's built-in test-runner suites. The tests compile only the simulation modules they exercise into the ignored `.test-build/` directory.
@@ -63,6 +64,16 @@ Passenger demand selection is isolated from the game loop.
 
 Train movement helpers are pure functions. They calculate the direction appropriate for an endpoint and the next valid station index without changing a train object. The simulation update remains responsible for applying a direction change. Rendering may ask for the next stop without mutating gameplay state.
 
+### Fixed-step simulation clock
+
+`FixedStepClock` is independent of the browser and game state.
+
+- The live game advances in fixed 1/60-second updates. The display can render at a different refresh rate without changing the size of gameplay updates.
+- The existing 50 ms frame-delta ceiling is retained, then the selected 1x, 2x or 3x speed multiplier is applied to simulation time.
+- At most 12 updates run during one rendered frame. If an unusually large backlog remains, excess whole steps are discarded while the fractional remainder is retained. This prevents a catch-up spiral after a stall.
+- The clock is reset when a run restarts, so a partial step from the previous run cannot leak into the next one.
+- The clock reports an interpolation fraction for future rendering work, but the current renderer does not interpolate train positions yet. Simulation state remains authoritative.
+
 ### Rendering
 
 Port Azure's roads, parks, trees, buildings, bridges, and landmarks do not change during a run. `drawCityOverlay` now paints this static artwork into an offscreen canvas once, then composites the cached image on later frames. Only river glints are redrawn as animated scenery. If the offscreen context cannot be created, the renderer falls back to drawing the static layer directly.
@@ -92,11 +103,9 @@ The GitHub Actions build workflow runs the tests first, then strict TypeScript c
 
 ## Next extraction sequence
 
-1. Extract the remaining simulation state and tick orchestration into a DOM-free `GameSimulation` module.
-2. Move the simulation state and `updateSimulation` into a `GameSimulation` module that has no DOM or Canvas access.
-3. Use a fixed simulation step with an accumulator so 1x, 2x, and 3x speeds change simulation time without tying gameplay rules to the display refresh rate.
-4. Split Canvas rendering from interaction and presentation; add resize-aware backing-store management and profiling before adding more visual effects.
-5. Separate economy, events, and progression once their state contracts are clear.
-6. Add deterministic scenario tests for boarding, alighting, transfer handling, queue pressure, phase transitions, and restart behavior.
+1. Extract the remaining simulation state and tick orchestration into a DOM-free `GameSimulation` module, using the fixed-step clock as its update boundary.
+2. Split Canvas rendering from interaction and presentation; add resize-aware backing-store management and profiling before adding more visual effects.
+3. Separate economy, events, and progression once their state contracts are clear.
+4. Add deterministic scenario tests for boarding, alighting, transfer handling, queue pressure, phase transitions, and restart behavior.
 
 The next steps are deliberately ordered around correctness first. New cities, campaign progression, and larger passenger populations become much safer once these boundaries are in place.

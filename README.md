@@ -2,16 +2,18 @@
 
 A small, original urban-transit strategy game prototype. Build metro lines, connect stations, move passengers, manage capacity, and keep the network flowing.
 
-## Current release — v0.19.0 · Reliable startup and route editing
+## Current release — v0.20.0 · Live startup and network certification
 
-Startup recovery now works even if the entry JavaScript is missing. A 20-second deadline prevents indefinite loading; retry requests fresh HTML, and late engine responses cannot dismiss a failed startup. The loading card remains readable without external CSS, keeps the menu inaccessible until ready and explains when JavaScript is disabled.
+Startup now begins at 0% and 0.0 seconds. Progress counts three real checks (interface, engine, city readiness), while a live clock reports actual elapsed time. There is no forced minimum loading delay; the menu retains the completed duration. CSS loads without blocking the critical loading card. Recovery works even if the entry JavaScript is missing. A 20-second deadline prevents indefinite loading; retry requests fresh HTML, and late engine responses cannot dismiss a failed startup. The loading card remains readable without external CSS, keeps the menu inaccessible until ready and explains when JavaScript is disabled.
 
 Route edits, fleet dispatch and network reset now run through tested engine commands. Selecting an existing endpoint keeps the fleet moving. Passengers on other lines replan at their next arrival; a removed transfer leaves them waiting for reconnection instead of creating false deliveries.
 
 A map-led operations desk with larger type, readable touch controls, mobile panel navigation and a shared city preview. All fourteen stations, four editable lines, transfers, upgrades, optional audio and the five stadium shift phases remain available.
 
 - Uniform Canvas scaling with DPR-aware backing store, 1–3× zoom, drag-to-pan, Fit and a keyboard station selector. Ctrl/Meta+wheel zooms; ordinary scrolling stays available.
-- Four service plans: **City shift** (original balance), **Gentle shift** (70% demand, 25-second rescue window, $40), **Rush hour** (150% demand, 12-second rescue window) and **Free build** (70% demand, $150, no overload defeat).
+- Five service plans: **City shift** (original balance), **Gentle shift** (70% demand, 25-second rescue window, $40), **Rush hour** (150% demand, 12-second rescue window), **Free build** (70% demand, $150, no overload defeat) and **Network certification** (a timed victory challenge).
+- **Network certification:** start with $32 and complete 30 deliveries, eight stations in one connected network and two grants before 320 simulation seconds. All goals must hold together. Overload can still end the run. The first service starts the clock; pause stops it.
+- Capacity/express purchases and phase rewards are now engine commands. The inspector lists leading passenger destinations and explains broken connections.
 - Optional city grants: ten new deliveries, eight stations in one connected network or a three-line interchange. Accept one at a time; complete it before its simulation-time deadline for funds. Each grant allows one attempt per shift; restarting restores the offers.
 - Seeded museum, harbor and university events redirect connected passenger demand. An advance notice and map ring identify the affected district. The existing stadium phases keep their own time window.
 - Ranked best scores are separate for each difficulty; the original standard score is preserved. Free build is unranked. Audio and Spotify remain optional.
@@ -79,7 +81,7 @@ npm install --prefix /tmp/cityflow-qa-tools --no-save --package-lock=false playw
 PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/browser-smoke.mjs
 ```
 
-Start Vite before that command. Pass a different base URL as the first argument to test a static build served under `/metro/`. The check covers four viewports, asset responses, real canvas taps, grants, purchases, inspection, zoom/pan, DPR, restart and CSS failure recovery. Screenshots default to `/tmp/cityflow-qa`. See [latest QA notes](docs/QA_0.19.md) for observed results and limits.
+Start Vite before that command. Pass a different base URL as the first argument to test a static build served under `/metro/`. The check covers four viewports, asset responses, real canvas taps, grants, purchases, inspection, zoom/pan, DPR, restart and CSS failure recovery. Screenshots default to `/tmp/cityflow-qa`. See [latest QA notes](docs/QA_0.20.md) for observed results and limits.
 
 The startup failure suite targets a production build served under `/metro/`:
 
@@ -87,7 +89,15 @@ The startup failure suite targets a production build served under `/metro/`:
 PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/loading-smoke.mjs http://127.0.0.1:4173/metro/
 ```
 
-It tests slow/cached startup, missing entry/module/CSS, the real timeout, late responses after timeout, successful retry and JavaScript-disabled messaging.
+It tests an exact zero start, a live elapsed clock, reset on fresh navigation, immediate readiness without an artificial delay, slow/cached startup, missing entry/module/CSS, delayed CSS, the real timeout, late responses, retry and JavaScript-disabled messaging.
+
+The certification browser scenario plays through both outcomes using actual UI controls and a virtual clock:
+
+```bash
+PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/challenge-smoke.mjs http://127.0.0.1:4173/metro/
+```
+
+Its deterministic demand is test-only. Live games retain randomized passenger selection.
 
 ## Project structure
 
@@ -97,6 +107,8 @@ It tests slow/cached startup, missing entry/module/CSS, the real timeout, late r
 - `src/simulation/gameTypes.ts`: shared simulation entity types.
 - `src/mapViewport.ts`: uniform world/CSS transforms, zoom and pan.
 - `src/cityMap.ts`: shared fourteen-station metadata and fresh runtime station creation.
+- `src/simulation/runEconomy.ts`: upgrades, goal progress and one-time phase rewards.
+- `src/simulation/serviceChallenge.ts`: timed certification objectives and outcomes.
 - `src/simulation/networkCommands.ts`: route edits, fleet placement, dispatch budget and graph reset.
 - `src/simulation/runState.ts`: run counters and explicit reset.
 - `src/simulation/servicePlans.ts`: difficulty tuning and seeded district events.

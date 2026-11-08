@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="cityflow-version" content="0.19.0" />
+    <meta name="cityflow-version" content="0.20.0" />
     <meta name="theme-color" content="#0b1716" />
     <meta name="description" content="CITYFLOW — a calm, challenging urban transit strategy game." />
     <title>CITYFLOW — Urban Transit Strategy</title>
@@ -12,10 +12,20 @@
       (() => {
         const root = document.documentElement;
         root.dataset.cityflowStartup = 'waiting';
+        const startedAt = performance.now();
+        const updateElapsed = () => {
+          const seconds = ((performance.now() - startedAt) / 1000).toFixed(1);
+          const elapsed = document.querySelector('#loading-elapsed');
+          if (elapsed) elapsed.textContent = `${seconds}s elapsed`;
+          return seconds;
+        };
+        const ticker = setInterval(updateElapsed, 100);
+        const stopClock = () => { clearInterval(ticker); return updateElapsed(); };
         const fail = (message) => {
           if (['ready', 'failed'].includes(root.dataset.cityflowStartup)) return;
           root.dataset.cityflowStartup = 'failed';
           clearTimeout(deadline);
+          stopClock();
           const screen = document.querySelector('#loading-screen');
           if (screen) { screen.classList.add('has-error'); screen.setAttribute('aria-busy', 'false'); }
           document.querySelector('#app')?.setAttribute('aria-busy', 'false');
@@ -34,6 +44,10 @@
           if (root.dataset.cityflowStartup === 'failed') return;
           clearTimeout(deadline);
           root.dataset.cityflowStartup = 'ready';
+          const duration = stopClock();
+          root.dataset.cityflowLoadSeconds = duration;
+          const summary = document.querySelector('#startup-duration');
+          if (summary) summary.textContent = `Ready in ${duration}s`;
           document.querySelector('#app')?.setAttribute('aria-busy', 'false');
           document.querySelector('#main-menu')?.removeAttribute('inert');
         }, { once: true });
@@ -56,10 +70,16 @@
       #loading-screen [hidden] { display:none; }
       #loading-screen.is-hidden { display:none; }
       #loading-screen.has-error .loading-track { opacity:.35; }
+      #loading-screen .loading-brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.1em; }
+      #loading-screen .loading-version { margin-left:auto; font-size:12px; font-weight:400; }
+      #loading-screen .loading-progress-meta, #loading-screen .loading-timing { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:12px; }
+      #loading-screen .loading-track { height:8px; overflow:hidden; border-radius:8px; background:#3b5058; margin:10px 0; }
+      #loading-screen .loading-track i { display:block; width:0%; height:100%; background:#b7d4a5; border-radius:inherit; }
+      #loading-screen .loading-footer { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; margin-top:24px; font-size:9px; color:#afc4cc; }
       #loading-screen .loading-error { color:#ffc4aa; font-size:14px; line-height:1.6; }
     </style>
-    <link rel="stylesheet" href="./src/style.css" />
-    <link rel="stylesheet" href="./src/command.css" />
+    <link rel="stylesheet" href="./src/style.css" media="print" onload="this.media='all';this.dataset.loaded='true'" onerror="this.dataset.failed='true'" />
+    <link rel="stylesheet" href="./src/command.css" media="print" onload="this.media='all';this.dataset.loaded='true'" onerror="this.dataset.failed='true'" />
   </head>
   <body class="menu-active">
     <div id="app" aria-busy="true">
@@ -69,21 +89,23 @@
           <div class="loading-brand">
             <span class="brand-mark"><i></i><i></i><i></i></span>
             <span>CITYFLOW</span>
-            <span class="loading-version">0.19</span>
+            <span class="loading-version">0.20</span>
           </div>
           <p class="loading-kicker">PORT AZURE · TRANSIT CONTROL</p>
           <h1>Preparing your city<span>.</span></h1>
-          <p class="loading-copy">Loading the game engine and checking the interface. Progress is an estimate.</p>
+          <p class="loading-copy">Three startup checks. The clock shows real elapsed time, not a download estimate.</p>
           <div class="loading-progress-meta">
-            <span id="loading-status" role="status" aria-live="polite">Opening Port Azure</span>
-            <strong id="loading-percent">04%</strong>
+            <span id="loading-status" role="status" aria-live="polite">Waiting for the interface</span>
+            <strong id="loading-percent">0%</strong>
           </div>
-          <div id="loading-progress" class="loading-track" role="progressbar" aria-label="Game loading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="4">
+          <div id="loading-progress" class="loading-track" role="progressbar" aria-label="Startup checks completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 of 3 startup checks complete">
             <i id="loading-bar"></i>
           </div>
+          <div class="loading-timing"><span id="loading-elapsed" aria-live="off">0.0s elapsed</span><span id="loading-checks">0 / 3 checks</span></div>
+          <p id="loading-slow" class="loading-slow">The counter keeps running while resources load. Slow connections can take longer.</p>
           <p id="loading-error" role="alert" class="loading-error" hidden>City startup was interrupted. Please try again.</p>
           <button id="loading-retry" class="loading-retry" type="button" hidden>Reload game</button>
-          <noscript><p>JavaScript is required to play CITYFLOW. Enable it and reload this page.</p><style>.loading-progress-meta,.loading-track,.loading-copy,.loading-footer { display:none !important; }</style></noscript>
+          <noscript><p>JavaScript is required to play CITYFLOW. Enable it and reload this page.</p><style>.loading-progress-meta,.loading-track,.loading-copy,.loading-footer,.loading-timing,.loading-slow { display:none !important; }</style></noscript>
           <div class="loading-footer"><span>BUILT FOR CLEAR THINKING</span><span>INITIALISING SYSTEMS</span></div>
         </div>
       </section>
@@ -94,7 +116,7 @@
             <a class="menu-brand" href="#" aria-label="CITYFLOW home">
               <span class="brand-mark"><i></i><i></i><i></i></span>
               <span>CITYFLOW</span>
-              <span class="menu-version">0.19</span>
+              <span class="menu-version">0.20</span><span id="startup-duration" class="startup-duration" role="status"></span>
             </a>
             <div class="menu-nav-meta">
               <span class="menu-online"><i></i> PLAYABLE CITY SIMULATOR</span>
@@ -108,7 +130,7 @@
               <p class="menu-kicker"><span></span> THE CITY IS YOURS TO CONNECT</p>
               <h1>Build a network.<br />Keep the <em>city moving.</em></h1>
               <p class="menu-lead">Start with two stations, learn how demand moves, then adapt your lines as the city enters new phases. Every shift brings a different problem to solve.</p>
-              <div class="service-plan-picker"><label for="service-plan">YOUR SERVICE PLAN</label><select id="service-plan"><option value="standard">City shift · original challenge</option><option value="relaxed">Gentle shift · learn at your pace</option><option value="rush">Rush hour · expert pressure</option><option value="sandbox">Free build · no overload defeat</option></select><p id="service-plan-description">The original five-phase shift. Build, adapt and survive.</p></div>
+              <div class="service-plan-picker"><label for="service-plan">YOUR SERVICE PLAN</label><select id="service-plan"><option value="standard">City shift · original challenge</option><option value="relaxed">Gentle shift · learn at your pace</option><option value="rush">Rush hour · expert pressure</option><option value="challenge">Network certification · timed challenge</option><option value="sandbox">Free build · no overload defeat</option></select><p id="service-plan-description">The original five-phase shift. Build, adapt and survive.</p></div>
               <div class="menu-actions">
                 <button id="start-game" class="menu-play-button" type="button">
                   <span class="play-icon">▶</span>
@@ -161,7 +183,7 @@
               <article><span>05 · 15:30+</span><b>Afternoon &amp; evening commute</b><small>Balance the growing commute and city demand.</small></article>
             </div>
           </section>
-          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.19.0</span></footer>
+          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.20.0</span></footer>
         </div>
       </section>
 
@@ -213,8 +235,8 @@
               </div>
               <div id="game-over" class="game-over hidden">
                 <div class="game-over-card">
-                  <span class="eyebrow">CITYFLOW · SHIFT REPORT</span>
-                  <h2>The network<br/><em>needs a rethink.</em></h2>
+                  <span class="eyebrow">CITYFLOW · <span id="report-outcome">SHIFT REPORT</span></span>
+                  <h2 id="report-heading">The network<br/><em>needs a rethink.</em></h2>
                   <p id="game-over-copy">The city became too crowded to keep moving.</p>
                   <div class="final-score"><span>PASSENGERS DELIVERED</span><strong id="final-score">0</strong></div>
                   <div class="report-stats"><div><span>PERSONAL BEST</span><strong id="final-best">000</strong></div><div><span>PHASE GOALS</span><strong id="final-phases">0 / 5</strong></div></div>
@@ -294,6 +316,7 @@
           </section>
 
           <section class="traffic-card">
+            <div id="challenge-panel" class="challenge-panel" hidden><div class="panel-head"><span class="eyebrow">NETWORK CERTIFICATION</span><strong id="challenge-clock">320s left</strong></div><p>Complete all three goals before the deadline. Pause to plan.</p><ul><li data-challenge-goal></li><li data-challenge-goal></li><li data-challenge-goal></li></ul></div>
             <div class="panel-head"><span class="eyebrow">SHIFT OVERVIEW</span><span class="pulse-time">5 PHASES</span></div>
             <div class="phase-panel"><div class="phase-heading"><span class="eyebrow">SHIFT PROGRESSION</span><span id="phase-count">PHASE 01 / 05</span></div><strong id="phase-name">Morning setup</strong><div class="phase-track"><i id="phase-progress"></i></div><small id="phase-objective">Build your first service and deliver five passengers.</small><div class="mission-goal-row"><span id="phase-goal">Deliver 5 passengers</span><span id="phase-state">IN PROGRESS</span></div><div class="mission-track"><i id="mission-progress-bar"></i></div><div class="mission-meta"><span id="mission-progress-label">0 / 5</span><span id="mission-reward">REWARD +$8</span></div></div>
             <div class="event-row"><span class="event-icon">◷</span><div><b id="event-title">Morning commute</b><small id="event-copy">The city is starting its day.</small></div><span class="event-state">ACTIVE</span></div>
@@ -324,13 +347,14 @@
             </div>
             <div class="station-pressure-row"><span>LOCAL PRESSURE</span><strong id="station-pressure">AWAITING SELECTION</strong></div>
             <div class="station-access"><label for="station-access">Choose a station</label><select id="station-access"></select><button id="station-connect" type="button">Select on current line</button></div>
+            <p id="station-destinations" class="station-destinations">Passenger destinations appear when people are waiting.</p>
             <p id="station-advice">Click any station on the map to inspect its passenger queue, serving lines, and local demand.</p>
             <p id="tip-text" class="station-event-note">Tip: one well-connected interchange can be more useful than three isolated lines.</p>
           </section>
-          <footer class="side-footer"><span>CITYFLOW <b>0.19.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
+          <footer class="side-footer"><span>CITYFLOW <b>0.20.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
         </aside>
       </main>
-      <div class="bottom-credit"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.19.0</span></div>
+      <div class="bottom-credit"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.20.0</span></div>
     </div>
     <script type="module" src="./src/boot.ts"></script>
   </body>

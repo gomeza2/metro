@@ -14,14 +14,16 @@ function readAssetPath(tag, attribute, label) {
   return match[1];
 }
 
-const stylesheetTag = /<link[^>]*\.css[^>]*>/i.exec(html)?.[0] ?? null;
-const scriptTag = /<script[^>]*\.js[^>]*>/i.exec(html)?.[0] ?? null;
-const stylesheetPath = readAssetPath(stylesheetTag, 'href', 'CSS stylesheet');
-const scriptPath = readAssetPath(scriptTag, 'src', 'JavaScript entry');
-
-for (const [label, assetPath] of [['CSS', stylesheetPath], ['JavaScript', scriptPath]]) {
-  assert.ok(assetPath.startsWith('./assets/'), label + ' path must be relative for GitHub Pages project sites');
-  await stat(resolve(distRoot, assetPath));
+const stylesheetTags = html.match(/<link[^>]*\.css[^>]*>/gi) ?? [];
+const scriptTags = html.match(/<script[^>]*\.js[^>]*>/gi) ?? [];
+assert.ok(stylesheetTags.length > 0, 'Production HTML must load CSS');
+assert.ok(scriptTags.length > 0, 'Production HTML must load JavaScript');
+for (const [label, tags, attribute] of [['CSS', stylesheetTags, 'href'], ['JavaScript', scriptTags, 'src']]) {
+  for (const tag of tags) {
+    const assetPath = readAssetPath(tag, attribute, label);
+    assert.ok(assetPath.startsWith('./assets/'), label + ' path must be relative for GitHub Pages project sites');
+    await stat(resolve(distRoot, assetPath));
+  }
 }
 
 console.log('Build smoke check passed: relative CSS and JavaScript assets exist in dist.');

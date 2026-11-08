@@ -219,7 +219,7 @@ Museum openings, ferry arrivals and university open days vary the focus of a shi
 - [x] Optional timed grants, district events and selectable service plans.
 - [x] Shared run counter object and deterministic five-phase network scenario.
 - [ ] Verify the actual Pages publication once the environment permits the host; compare its version and asset responses.
-- [ ] Move route edits, fleet dispatch, phase rewards and upgrades behind explicit tested engine commands.
+- [x] Move route edits, fleet dispatch, phase rewards and upgrades behind explicit tested engine commands.
 - [ ] Extract dynamic Canvas rendering and profile long sessions on real mobile hardware.
 - [ ] Playtest grant deadlines and the rush-hour curve with human players; tune using outcomes.
 - [ ] Add curated victory scenarios, seeded replay, local run history and persistent unlocks before new cities.
@@ -237,3 +237,25 @@ No campaign, second city, daily challenge or permanent progression is advertised
 ### Validation and remaining publication check
 
 See `QA_0.19.md`. The user explicitly requested integration into GitHub main after validation. This does not establish that the Pages deployment completed: direct Pages and API checks remain blocked by the environment's egress policy.
+
+
+## v0.20 — certification and actionable station information
+
+Network certification is the first optional victory scenario: 30 passengers delivered, eight stations in one connected component and two completed city grants, all before 320 simulation seconds. It uses the existing Port Azure map, standard demand/rescue tuning, $32 opening funds and mode-specific best scores. Both a late deadline and overload can end the challenge. Building routes while paused is supported; the player must resume to earn a grant or advance the certification check. All original modes remain available.
+
+The inspector now lists up to three destinations by queued passenger count. This gives route decisions a concrete basis instead of showing only an aggregate queue. Disconnected riders explicitly request a restored connection. Capacity buttons display the current and next number of seats; express buttons display the next speed multiplier.
+
+Loading starts at zero, shows real seconds and counts completed startup checks. A fast load reveals the menu immediately, with its duration retained. A slow load keeps time without inventing download progress. Recovery remains independent of the engine.
+
+### Next milestones
+
+- [x] Real startup timing, zero reset and no artificial minimum wait.
+- [x] Engine-owned purchases and one-time phase grants.
+- [x] Optional timed victory scenario with tested victory, deadline and restart.
+- [x] Actual destination information and disconnected-passenger advice.
+- [ ] Keyboard/focus management for the final report and further screen-reader playtesting.
+- [ ] Persistent run history with completion reasons and scenario-specific records.
+- [ ] Extract the dynamic Canvas renderer and profile actual mobile hardware.
+- [ ] Human playtesting of the certification curve before additional scenarios/cities.
+
+A campaign, permanent unlocks, daily challenges and additional cities are still future work.

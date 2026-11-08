@@ -2,6 +2,7 @@ export const SERVICE_PLANS = {
   standard: { name: 'City shift', demand: 1, overloadSeconds: 17, startingCredits: 28, ranked: true, description: 'The original five-phase shift. Build, adapt and survive.' },
   relaxed: { name: 'Gentle shift', demand: 0.7, overloadSeconds: 25, startingCredits: 40, ranked: true, description: 'More planning time, lighter demand and $40 to begin.' },
   rush: { name: 'Rush hour', demand: 1.5, overloadSeconds: 12, startingCredits: 28, ranked: true, description: '50% more demand. Just 12 seconds to rescue a critical station.' },
+  challenge: { name: 'Network certification', demand: 1, overloadSeconds: 17, startingCredits: 32, ranked: true, description: 'Before 320 simulation seconds: deliver 30 people, connect 8 stations and complete 2 grants. $32 starting funds.' },
   sandbox: { name: 'Free build', demand: 0.7, overloadSeconds: Infinity, startingCredits: 150, ranked: false, description: 'No overload defeat. $150 to experiment; no ranked score.' },
 } as const;
 export type ServicePlanId = keyof typeof SERVICE_PLANS;

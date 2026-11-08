@@ -6,6 +6,9 @@ export const CONTRACTS = [
   { id: 'interchange', title: 'Transfer hub', description: 'Serve one station with 3 active lines within 60 seconds.', reward: 12, target: 3, seconds: 60 },
 ] as const;
 export type ContractId = typeof CONTRACTS[number]['id'];
+export function connectedStationCount(stations: readonly Station[], planner: RoutePlanner): number {
+  return Math.max(0, ...stations.map(from => stations.filter(to => planner.findRoute(from.id, to.id) !== null).length));
+}
 export type ContractSnapshot = { elapsed: number; score: number; stations: Station[]; lines: MetroLine[]; planner: RoutePlanner };
 export class ServiceContracts {
   active: { id: ContractId; started: number; baseline: number } | null = null;
@@ -23,7 +26,7 @@ export class ServiceContracts {
     if (!this.active) return 0;
     switch (this.active.id) {
       case 'deliveries': return Math.max(0, snapshot.score - this.active.baseline);
-      case 'coverage': return Math.max(0, ...snapshot.stations.map(from => snapshot.stations.filter(to => snapshot.planner.findRoute(from.id, to.id) !== null).length));
+      case 'coverage': return connectedStationCount(snapshot.stations, snapshot.planner);
       case 'interchange': return Math.max(0, ...snapshot.stations.map(station => snapshot.lines.filter(line => line.stations.length >= 2 && line.stations.includes(station.id)).length));
     }
   }

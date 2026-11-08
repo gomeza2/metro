@@ -1,5 +1,7 @@
+import { serviceChallengeStatus } from './simulation/serviceChallenge';
+import { RunEconomy, PHASE_REWARD, phaseGoal } from './simulation/runEconomy';
 import { RunState } from './simulation/runState';
-import { CONTRACTS, ServiceContracts, type ContractId } from './simulation/serviceContracts';
+import { CONTRACTS, ServiceContracts, connectedStationCount, type ContractId } from './simulation/serviceContracts';
 import { SERVICE_PLANS, districtEventAt, type ServicePlanId } from './simulation/servicePlans';
 import { MapViewport } from './mapViewport';
 import { createCityStations, CITY_STATIONS } from './cityMap';
@@ -43,7 +45,8 @@ const network = new NetworkCommands(stations, lines);
 let selectedLine = 0;
 let focusedStation: Station | null = null;
 const simulationState = new RunState();
-const completedPhaseObjectives = new Set<number>();
+const economy = new RunEconomy();
+const completedPhaseObjectives = economy.completedPhases;
 let servicePlan: ServicePlanId = 'standard';
 let eventSeed = Math.floor(Math.random() * 0x100000000);
 const contracts = new ServiceContracts();
@@ -57,12 +60,10 @@ function readBestScore(): number {
   }
 }
 let bestScore = readBestScore();
-const PHASE_REWARD = 8;
 let paused = false;
 let simulationSpeed = 1;
-let capacityLevel = 1;
-let expressLevel = 1;
 let gameOver = false;
+let runResult: 'running' | 'won' | 'lost' = 'running';
 let gameStarted = false;
 let routeEditMode = true;
 let hintDismissed = false;
@@ -88,11 +89,13 @@ const gameSimulation = new GameSimulation({
   state: simulationState,
   getRoutePlanner: () => network.planner,
   isRunning: () => gameStarted && !paused && !gameOver,
-  getCapacityLevel: () => capacityLevel,
-  getExpressLevel: () => expressLevel,
+  getCapacityLevel: () => economy.capacityLevel,
+  getExpressLevel: () => economy.expressLevel,
   onOverload: endGame,
   getServicePlan: () => servicePlan,
   getEventSeed: () => eventSeed,
+  economy,
+  onPhaseReward: reward => { $('#map-status').textContent = `PHASE GOAL COMPLETE · +$${reward} REWARD`; },
 });
 
 const stationById = (id: string) => stations.find((station) => station.id === id)!;
@@ -100,8 +103,8 @@ const totalWaiting = () => stations.reduce((sum, station) => sum + station.queue
 const totalOnTrains = () => lines.reduce((sum, line) => sum + line.trains.reduce((fleet, train) => fleet + train.passengers.length, 0), 0);
 const activeLines = () => lines.filter((line) => line.stations.length >= 2).length;
 const cityHour = () => Math.floor((8 * 60 + Math.floor(simulationState.elapsed * 2.2)) / 60) % 24;
-const capacityCost = () => 12 + (capacityLevel - 1) * 14;
-const expressCost = () => 10 + (expressLevel - 1) * 12;
+const capacityCost = () => economy.cost('capacity');
+const expressCost = () => economy.cost('express');
 
 
 function nextTrainStop(line: MetroLine, train: Train): Station | null {
@@ -180,14 +183,28 @@ function clearRoute(): void {
 function contractSnapshot() { return { elapsed: simulationState.elapsed, score: simulationState.score, stations, lines, planner: network.planner }; }
 function updateSimulation(dt: number): void {
   gameSimulation.step(dt);
-  if (gameStarted && !paused && !gameOver) simulationState.credits += contracts.step(contractSnapshot());
+  if (gameStarted && !paused && !gameOver) {
+    simulationState.credits += contracts.step(contractSnapshot());
+    if (servicePlan === 'challenge') {
+      const status = challengeStatus();
+      if (status.outcome !== 'running') finishRun(status.outcome === 'won', status.outcome === 'won'
+        ? 'Port Azure is certified: 30 deliveries, eight connected stations and two completed grants. Your network is ready for the city.'
+        : 'The certification deadline passed. Build a connected network, complete grants and deliver 30 passengers before 320 simulation seconds.');
+    }
+  }
 }
 
 function endGame(station: Station): void {
+  finishRun(false, `${station.name} stayed overcrowded for too long. The city needs more capacity or a better connection.`);
+}
+function finishRun(success: boolean, copy: string): void {
   if (gameOver) return;
   gameOver = true;
+  runResult = success ? 'won' : 'lost';
   paused = true;
-  $('#game-over-copy').textContent = `${station.name} stayed overcrowded for too long. The city needs more capacity or a better connection.`;
+  $('#game-over-copy').textContent = copy;
+  $('#report-heading').innerHTML = success ? 'A city<br/><em>connected.</em>' : 'The network<br/><em>needs a rethink.</em>';
+  $('#report-outcome').textContent = success ? 'NETWORK CERTIFIED' : 'SHIFT REPORT';
   const newRecord = SERVICE_PLANS[servicePlan].ranked && simulationState.score > bestScore;
   if (newRecord) {
     bestScore = simulationState.score;
@@ -199,7 +216,7 @@ function endGame(station: Station): void {
   $('#record-state').textContent = newRecord ? 'NEW PERSONAL BEST' : `PERSONAL BEST · ${String(bestScore).padStart(3, '0')}`;
   $('#game-over').classList.remove('hidden');
   $('#pause-button').innerHTML = '<span>▶</span> Resume';
-  $('#map-status').textContent = 'SERVICE INTERRUPTED · NETWORK OVERLOAD';
+  $('#map-status').textContent = success ? 'NETWORK CERTIFIED · CHALLENGE COMPLETE' : 'SHIFT ENDED · REVIEW YOUR NETWORK';
   updateHUD();
 }
 
@@ -480,7 +497,7 @@ function drawTrain(line: MetroLine, train: Train): void {
     ctx.fillStyle = '#3d5549';
     ctx.font = '700 8px "DM Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(String(train.passengers.length) + '/' + (6 * capacityLevel), x, y - 17);
+    ctx.fillText(String(train.passengers.length) + '/' + (6 * economy.capacityLevel), x, y - 17);
   }
 }
 
@@ -510,26 +527,9 @@ function render(): void {
   }
 }
 
-function getPhaseGoal(index: number): { current: number; target: number } {
-  switch (index) {
-    case 0: return { current: simulationState.score, target: 5 };
-    case 1: return { current: lines.some((line) => line.stations.includes('stadium')) ? 1 : 0, target: 1 };
-    case 2: return { current: simulationState.stadiumArrivalsDelivered, target: 5 };
-    case 3: return { current: simulationState.stadiumDeparturesDelivered, target: 5 };
-    default: return { current: simulationState.score, target: 55 };
-  }
-}
-
 function updatePhaseMission(phaseIndex: number): void {
   const phase = SHIFT_PHASES[phaseIndex]!;
-  const goal = getPhaseGoal(phaseIndex);
-  const completed = completedPhaseObjectives.has(phaseIndex);
-  const nowComplete = goal.current >= goal.target;
-  if (!completed && nowComplete && gameStarted && !gameOver) {
-    completedPhaseObjectives.add(phaseIndex);
-    simulationState.credits += PHASE_REWARD;
-    $('#map-status').textContent = `PHASE GOAL COMPLETE · +${PHASE_REWARD} REWARD`;
-  }
+  const goal = phaseGoal(phaseIndex, simulationState, lines);
   const claimed = completedPhaseObjectives.has(phaseIndex);
   $('#phase-name').textContent = phase.name;
   $('#phase-objective').textContent = phase.objective;
@@ -630,8 +630,13 @@ function updateCityEvent(): void {
 }
 
 function updateHUD(): void {
+  $('.status-pill').innerHTML = `<i></i> ${runResult === 'won' ? 'CERTIFIED' : runResult === 'lost' ? 'ENDED' : paused ? 'PAUSED' : 'OPERATING'}`;
+  $<HTMLButtonElement>('#pause-button').disabled = gameOver;
+  document.querySelectorAll<HTMLButtonElement>('.speed-button').forEach(button => { button.disabled = gameOver; });
+  if (gameOver) $('#pause-button').textContent = 'Finished';
   $('#network-summary').textContent = `$${simulationState.credits} funds · ${simulationState.score} delivered · ${totalWaiting()} waiting`;
   updateContracts();
+  updateChallenge();
   $('#service-plan-label').textContent = SERVICE_PLANS[servicePlan].name;
   $('#score').textContent = String(simulationState.score).padStart(3, '0');
   $('#best-score').textContent = SERVICE_PLANS[servicePlan].ranked ? String(bestScore).padStart(3, '0') : 'FREE';
@@ -645,8 +650,8 @@ function updateHUD(): void {
   $('#fleet-state').textContent = selectedFleet ? `Fleet · ${selectedFleet.fleetSize}/3 trains` : 'Fleet · 0/3 trains';
   $('#dispatch-cost').textContent = selectedFleet && selectedFleet.fleetSize < 3 ? '$' + String(dispatchCost(selectedFleet)) : 'MAX';
   $('#credits').textContent = '$' + String(simulationState.credits);
-  $('.capacity-cost').textContent = capacityLevel >= 3 ? 'MAX' : '$' + String(capacityCost());
-  $('.express-cost').textContent = expressLevel >= 3 ? 'MAX' : '$' + String(expressCost());
+  $('.capacity-cost').textContent = economy.capacityLevel >= 3 ? 'MAX' : '$' + String(capacityCost());
+  $('.express-cost').textContent = economy.expressLevel >= 3 ? 'MAX' : '$' + String(expressCost());
   const minutes = 8 * 60 + Math.floor(simulationState.elapsed * 2.2);
   $('#city-time').textContent = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
   const connected = activeLines() > 0;
@@ -655,13 +660,13 @@ function updateHUD(): void {
   $('#flow-bar').setAttribute('style', `width:${flow}%`);
   $('#flow-label').textContent = !connected ? 'Waiting for service' : flow > 70 ? 'Smooth connections' : flow > 38 ? 'Building pressure' : 'Network under stress';
   $('#flow-note').textContent = !connected ? 'Connect stations to begin moving passengers.' : `${queueTotal} passengers are waiting across the network.`;
-  $('#capacity-state').textContent = `Train capacity ×${capacityLevel}`;
-  $('#express-state').textContent = `Train speed ×${expressLevel}`;
-  $<HTMLButtonElement>('#capacity-button').disabled = gameOver || capacityLevel >= 3 || simulationState.credits < capacityCost();
-  $<HTMLButtonElement>('#speed-button').disabled = gameOver || expressLevel >= 3 || simulationState.credits < expressCost();
+  $('#capacity-state').textContent = economy.capacityLevel >= 3 ? '18 seats · maximum' : `${6 * economy.capacityLevel} → ${6 * (economy.capacityLevel + 1)} seats / train`;
+  $('#express-state').textContent = economy.expressLevel >= 3 ? 'Speed ×3 · maximum' : `Speed ×${economy.expressLevel} → ×${economy.expressLevel + 1}`;
+  $<HTMLButtonElement>('#capacity-button').disabled = gameOver || economy.capacityLevel >= 3 || simulationState.credits < capacityCost();
+  $<HTMLButtonElement>('#speed-button').disabled = gameOver || economy.expressLevel >= 3 || simulationState.credits < expressCost();
   $<HTMLButtonElement>('#dispatch-button').disabled = gameOver || !selectedFleet || selectedFleet.stations.length < 2 || selectedFleet.fleetSize >= 3 || simulationState.credits < dispatchCost(selectedFleet);
-  $('#capacity-button').classList.toggle('maxed', capacityLevel >= 3 || simulationState.credits < capacityCost());
-  $('#speed-button').classList.toggle('maxed', expressLevel >= 3 || simulationState.credits < expressCost());
+  $('#capacity-button').classList.toggle('maxed', economy.capacityLevel >= 3 || simulationState.credits < capacityCost());
+  $('#speed-button').classList.toggle('maxed', economy.expressLevel >= 3 || simulationState.credits < expressCost());
   $('#dispatch-button').classList.toggle('maxed', !selectedFleet || selectedFleet.stations.length < 2 || selectedFleet.fleetSize >= 3 || simulationState.credits < dispatchCost(selectedFleet));
   updateStationInspector();
   const modeButton = $('#map-mode-button');
@@ -679,6 +684,13 @@ function updateHUD(): void {
   });
 }
 
+function passengerDestinations(station: Station): string {
+  const counts = new Map<string, number>();
+  for (const passenger of station.queue) counts.set(passenger.destination, (counts.get(passenger.destination) ?? 0) + 1);
+  const top = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 3);
+  return top.length ? `Heading to: ${top.map(([id, count]) => `${stationById(id).name} (${count})`).join(' · ')}` : 'No passengers waiting here.';
+}
+
 function updateStationInspector(): void {
   const station = focusedStation;
   $<HTMLSelectElement>('#station-access').value = station?.id ?? '';
@@ -691,6 +703,7 @@ function updateStationInspector(): void {
     $('#station-queue').textContent = '—';
     $('#station-lines').textContent = '—';
     $('#station-pressure').textContent = 'AWAITING SELECTION';
+    $('#station-destinations').textContent = 'Passenger destinations appear when people are waiting.';
     $('#station-advice').textContent = 'Click any station on the map to inspect its passenger queue, serving lines, and local demand.';
     return;
   }
@@ -720,7 +733,9 @@ function updateStationInspector(): void {
     civic: 'Civic services generate steady essential journeys. Avoid leaving this station isolated from the main network.',
     leisure: 'Leisure destinations can experience sharp event-driven demand. Build capacity before the crowd arrives.',
   };
-  $('#station-advice').textContent = station.overload > 0
+  const stranded = station.queue.filter(passenger => passenger.route.length < 2 && passenger.destination !== station.id).length;
+  $('#station-destinations').textContent = passengerDestinations(station);
+  $('#station-advice').textContent = stranded ? `${stranded} passengers have no path to their destination. Restore a connection or interchange so they can continue.` : station.overload > 0
     ? `${station.queue.length} people are waiting here. Add service or connect another route before the overload timer fills.`
     : advice[station.kind];
 }
@@ -872,13 +887,12 @@ function restartGame(): void {
   simulationState.reset(SERVICE_PLANS[servicePlan].startingCredits);
   contracts.reset();
   eventSeed = Math.floor(Math.random() * 0x100000000);
-  completedPhaseObjectives.clear();
   lastDisplayedCityEvent = null;
   paused = false;
   simulationSpeed = 1;
-  capacityLevel = 1;
-  expressLevel = 1;
+  economy.reset();
   gameOver = false;
+  runResult = 'running';
   gameStarted = true;
   routeEditMode = true;
   $('#game-over').classList.add('hidden');
@@ -1004,6 +1018,21 @@ $('#contract-offers').addEventListener('click', event => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-contract]');
   if (button && gameStarted && !gameOver) { contracts.accept(button.dataset.contract as ContractId, contractSnapshot()); updateContracts(); }
 });
+function challengeStatus() {
+  return serviceChallengeStatus({ elapsed: simulationState.elapsed, score: simulationState.score,
+    coverage: connectedStationCount(stations, network.planner), grants: contracts.completed.size });
+}
+function updateChallenge(): void {
+  $('#challenge-panel').hidden = servicePlan !== 'challenge';
+  if (servicePlan !== 'challenge') return;
+  const status = challengeStatus();
+  $('#challenge-clock').textContent = `${Math.ceil(status.remaining)}s left`;
+  document.querySelectorAll<HTMLElement>('[data-challenge-goal]').forEach((item, index) => {
+    const goal = status.goals[index]!;
+    item.textContent = `${goal.current >= goal.target ? '✓' : '○'} ${goal.label} · ${Math.min(goal.current, goal.target)} / ${goal.target}`;
+    item.classList.toggle('is-complete', goal.current >= goal.target);
+  });
+}
 function updateContracts(): void {
   const active = contracts.active;
   const contract = CONTRACTS.find(item => item.id === active?.id);
@@ -1038,19 +1067,15 @@ $('#clear-button').addEventListener('click', clearRoute);
 $('#pause-button').addEventListener('click', togglePause);
 $('#sound-button').addEventListener('click', toggleSound);
 $('#capacity-button').addEventListener('click', () => {
-  if (capacityLevel < 3 && simulationState.credits >= capacityCost()) {
-    simulationState.credits -= capacityCost();
-    capacityLevel += 1;
-    $('#map-status').textContent = 'FLEET UPGRADED · MORE PASSENGER CAPACITY';
-  }
+  if (!gameStarted || gameOver) return;
+  const result = economy.buy('capacity', simulationState);
+  if (result.ok) $('#map-status').textContent = `CAPACITY UPGRADED · ${6 * result.level} SEATS PER TRAIN · −$${result.cost}`;
   updateHUD();
 });
 $('#speed-button').addEventListener('click', () => {
-  if (expressLevel < 3 && simulationState.credits >= expressCost()) {
-    simulationState.credits -= expressCost();
-    expressLevel += 1;
-    $('#map-status').textContent = 'EXPRESS SERVICE INSTALLED · FASTER TRAINS';
-  }
+  if (!gameStarted || gameOver) return;
+  const result = economy.buy('express', simulationState);
+  if (result.ok) $('#map-status').textContent = `EXPRESS UPGRADED · SPEED ×${result.level} · −$${result.cost}`;
   updateHUD();
 });
 $('#dispatch-button').addEventListener('click', () => {

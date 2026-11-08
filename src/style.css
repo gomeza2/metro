@@ -683,7 +683,7 @@ h1 em, .game-over h2 em { color: var(--green); font-style: normal; }
 .loading-progress-meta span { color: #526f58; font: 8px var(--mono); }
 .loading-progress-meta strong { color: #2b5138; font: 700 10px var(--mono); }
 .loading-track { height: 7px; overflow: hidden; border-radius: 99px; background: #e0eadc; }
-.loading-track i { display: block; width: 4%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#83b083,#d8b071,#75a17e); transition: width .18s ease; }
+.loading-track i { display: block; width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#83b083,#d8b071,#75a17e); transition: width .18s ease; }
 .loading-error { margin: 13px 0 0; color: #a14f43; font-size: 10px; line-height: 1.5; }
 .loading-retry { margin-top: 11px; padding: 9px 12px; border: 1px solid #acc4a8; border-radius: 7px; background: #eaf2e6; color: #31563b; cursor: pointer; font-size: 10px; font-weight: 800; }
 .loading-footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; color: #8ca18c; font: 7px var(--mono); letter-spacing: .07em; }

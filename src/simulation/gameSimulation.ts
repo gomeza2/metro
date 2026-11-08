@@ -1,3 +1,4 @@
+import type { RunEconomy } from './runEconomy.js';
 import { districtEventAt, SERVICE_PLANS, type ServicePlanId } from './servicePlans.js';
 import type { RoutePlanner } from './pathfinding.js';
 import {
@@ -33,6 +34,8 @@ export interface GameSimulationOptions {
   random?: () => number;
   getServicePlan?: () => ServicePlanId;
   getEventSeed?: () => number;
+  economy?: RunEconomy;
+  onPhaseReward?: (reward: number) => void;
 }
 
 /**
@@ -111,6 +114,10 @@ export class GameSimulation {
         overloadHandled = true;
         this.options.onOverload(station);
       }
+    }
+    if (!overloadHandled) {
+      const reward = this.options.economy?.awardPhase(state, lines) ?? 0;
+      if (reward) this.options.onPhaseReward?.(reward);
     }
   }
 

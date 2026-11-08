@@ -23,6 +23,8 @@
     "src/simulation/serviceContracts.ts",
     "src/simulation/servicePlans.ts",
     "src/simulation/runState.ts",
-    "src/simulation/networkCommands.ts"
+    "src/simulation/networkCommands.ts",
+    "src/simulation/runEconomy.ts",
+    "src/simulation/serviceChallenge.ts"
   ]
 }

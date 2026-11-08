@@ -5,7 +5,7 @@ This document records the current boundaries and the order in which the original
 ## Current runtime
 
 - `src/boot.ts` loads the application module, reports startup progress, and displays a retry state if startup fails.
-- `src/main.ts` is still the application composition root. It composes `RunState`, `NetworkCommands` and `GameSimulation`; it still owns upgrades, UI flags, the update loop, DOM interaction, HUD coordination and Canvas render orchestration. It is smaller than before, but it is not yet a fully separated engine.
+- `src/main.ts` is still the application composition root. It composes `RunState`, `NetworkCommands` and `GameSimulation`; it still owns UI flags, the update loop, DOM interaction, HUD coordination and Canvas render orchestration. It is smaller than before, but it is not yet a fully separated engine.
 - `src/simulation/pathfinding.ts` owns the transit graph snapshot and shortest-route planner.
 - `src/simulation/trainMotion.ts` owns pure train-direction and next-stop calculations.
 - `src/simulation/passengerDemand.ts` owns phase-aware trip weighting and injectable weighted candidate selection.
@@ -153,3 +153,14 @@ A small inline recovery script runs before external CSS and modules. It owns the
 `NetworkCommands` owns extension/trimming, Undo, Clear, planner replacement, fleet placement, dispatch debiting and full network reset. A no-op endpoint selection does not reset trains. Every topology edit returns riders from the edited fleet to their recorded last stops and replans all station queues. Other fleets retain their positions; `GameSimulation` replans onboard riders at their actual next arrival. A disconnected destination creates a waiting passenger with an empty route, never a delivery. Restoring an edge replans and rescues these passengers.
 
 The existing pure arrival helper retains its legacy empty-route behavior for compatibility; the engine filters disconnected arrivals before passing them to that helper. Route-command tests cover immutable planner snapshots, no-op identity, invalid inputs, passenger conservation, paid dispatch limits, reconnection and reset. Upgrade purchases, phase rewards and rendering extraction remain next; the architecture is still incremental.
+
+
+## v0.20 — truthful startup, economy and certification
+
+Startup now reports completed checks instead of an asymptotic estimated percentage. Initial HTML and CSS both start at zero. An independent 100ms ticker measures from the inline bootstrap with `performance.now()`, stops on readiness/failure and records the result in the menu. Fresh navigation creates a new timer. `boot.ts` releases the menu immediately after all three checks; no minimum-display sleep remains. Stylesheets use non-render-blocking media until loaded, then activate; boot explicitly waits for every sheet. The inline critical card remains legible while CSS is pending, including its timer and recovery controls.
+
+`RunEconomy` owns upgrade levels, escalating costs, atomic purchases and phase completion. `GameSimulation.step` awards an eligible active-phase reward exactly once, after checking overload and only when the simulation is running. `phaseGoal` and HUD updates are read-only. The stadium preparation goal now requires two or more stations on its service, rather than an isolated stadium marker. Existing standard tuning and prices remain unchanged. Reset clears both upgrade tracks and phase grants.
+
+`serviceChallengeStatus` derives certification progress from elapsed simulation time, deliveries, largest connected component and completed grants. All objectives must hold simultaneously before the exclusive 320-second deadline. It adds no persistent mutable counters. The browser composition ends only the challenge mode on success/deadline; original modes retain their overload behavior. Outcome presentation freezes the simulation and disables playback until restart. Certification records use the existing mode-specific score key.
+
+Coverage calculation is shared by grants and certification. The inspector summarizes actual queued destinations, including a notice when a topology edit leaves riders without a path. Full renderer extraction and persistent run history remain separate future work.

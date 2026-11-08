@@ -1,3 +1,4 @@
+import {showPanel, returnToMap} from './control-room.mjs';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
@@ -19,19 +20,19 @@ try{
     });
     await page.goto(base);await page.waitForSelector('#start-game:not([disabled])');
     await page.selectOption('#service-plan','challenge');await page.click('#start-game');
-    assert.equal(await page.locator('#credits').textContent(),'$32');assert.equal(await page.locator('#challenge-panel').isVisible(),true);
-    const connect=async id=>{await page.selectOption('#station-access',id);await page.click('#station-connect');};
+    assert.equal(await page.locator('#credits').textContent(),'$32');await showPanel(page,'missions');assert.equal(await page.locator('#challenge-panel').isVisible(),true);assert.equal(await page.locator('#track-state').textContent(),'Vía libre');
+    const connect=async id=>{await showPanel(page,'station');await page.selectOption('#station-access',id);await page.click('#station-connect');};
     await connect('harbor');await connect('gardens');
     if(outcome==='win'){
       for(const id of ['north','museum','market'])await connect(id);
       await page.click('[data-line="1"]');for(const id of ['museum','civic','east','stadium'])await connect(id);
       await page.click('[data-line="2"]');for(const id of ['museum','university'])await connect(id);
-      await page.click('[data-contract="coverage"]');await page.clock.runFor(200);
-      await page.click('[data-contract="interchange"]');await page.clock.runFor(200);
+      await showPanel(page,'grants');await page.click('[data-contract="coverage"]');await returnToMap(page,true);await page.clock.runFor(200);
+      await showPanel(page,'grants');await page.click('[data-contract="interchange"]');await returnToMap(page,true);await page.clock.runFor(200);
       assert.equal(await page.locator('#grant-count').textContent(),'2 / 3 COMPLETADOS');
-      await page.click('#speed-button');await page.click('#speed-button');await page.click('#capacity-button');
+      await showPanel(page,'operations');await page.click('#speed-button');await page.click('#speed-button');await page.click('#capacity-button');
     }
-    await page.click('[data-speed="3"]');
+    await returnToMap(page,true);await page.click('[data-speed="3"]');
     await page.clock.runFor(110000);
     assert.equal(await page.locator('#game-over').isVisible(),true);
     if(outcome==='win'){

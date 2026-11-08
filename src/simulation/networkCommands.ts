@@ -12,7 +12,7 @@ export class NetworkCommands {
   private trainSequence = 1;
   private readonly stationById: Map<string, Station>;
 
-  constructor(private readonly stations: Station[], private readonly lines: MetroLine[]) {
+  constructor(private readonly stations: Station[], private readonly lines: MetroLine[], private readonly canBuild: (lineId: number, route: readonly string[]) => boolean = () => true) {
     this.stationById = new Map(stations.map(station => [station.id, station]));
     this.planner = createRoutePlanner(stations, lines);
   }
@@ -22,8 +22,9 @@ export class NetworkCommands {
     if (!line || !this.stationById.has(stationId) || this.stationById.get(stationId)?.active === false) return 'invalid';
     const index = line.stations.indexOf(stationId);
     if (index === line.stations.length - 1 && index >= 0) return 'unchanged';
-    if (index >= 0) line.stations = line.stations.slice(0, index + 1);
-    else line.stations.push(stationId);
+    const route = index >= 0 ? line.stations.slice(0, index + 1) : [...line.stations, stationId];
+    if (!this.canBuild(lineId, route)) return 'invalid';
+    line.stations = route;
     this.rebuild(line);
     return index >= 0 ? 'trimmed' : 'extended';
   }
@@ -32,6 +33,7 @@ export class NetworkCommands {
     const line = this.lines.find(item => item.id === lineId);
     if (!line || new Set(route).size !== route.length || route.some(id => !this.stationById.has(id) || this.stationById.get(id)?.active === false)) return 'invalid';
     if (line.stations.join('\0') === route.join('\0')) return 'unchanged';
+    if (!this.canBuild(lineId, route)) return 'invalid';
     line.stations = [...route];
     this.rebuild(line);
     return 'extended';

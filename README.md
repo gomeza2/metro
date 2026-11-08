@@ -2,7 +2,28 @@
 
 Un juego original de estrategia de transporte urbano: construye líneas, conecta barrios y adapta el servicio a la demanda de Port Azure.
 
-## Versión actual — 0.24.0 · Refuerza donde hace falta
+## Versión actual — 0.25.0 · El mapa es la partida
+
+La partida ocupa la pantalla disponible: mapa, misión, material, líneas y pausa están juntos. **Gestionar** abre un centro de control con pestañas para línea, estación, turno, contratos y resumen. Abrirlo pausa el tiempo; volver al mapa mantiene la pausa hasta pulsar Continuar. Los paneles tienen su propio desplazamiento, sin obligarte a bajar por la página para jugar.
+
+El inicio señala Barrio Norte y Museo Central con una conexión guía discontinua. Después aparece el objetivo de transportar cinco personas y su progreso real. La cámara se ajusta al área de juego inicial, y se aleja al abrirse nuevos barrios. Viviendas, museo, comercio, servicios y ocio tienen símbolos propios; los pasajeros llevan el color del tipo de destino.
+
+### Construir exige elegir
+
+**Vía limitada** está activada inicialmente en urbano, tranquilo y hora pico. Se puede desactivar antes del turno para conservar la construcción clásica. Libre y certificación mantienen sus reglas anteriores sin este límite.
+
+- La vía se comparte entre todas las líneas: los tramos largos consumen más material. Acortar o vaciar un recorrido libera el material usado.
+- Cada línea admite **seis paradas**. Para cubrir más barrios debes repartir recorridos y compartir estaciones de transbordo.
+- El material base crece con la ciudad: **9 / 16 / 24 / 30** unidades para **3 / 6 / 10 / 14** estaciones abiertas.
+- Puedes comprar **5 unidades** por **$16**, después $24, $32, $40, $48 y $56; hasta seis compras por turno. Compite por fondos con trenes, servicio y andenes.
+- Un borrador compara el material y las paradas antes de aplicar. Si excede un límite, no se puede aplicar. Las ediciones directas inválidas explican el motivo y conservan trenes y pasajeros.
+- Los récords y el historial identifican las partidas con vía limitada; los récords anteriores siguen disponibles en construcción clásica.
+
+Se mantienen español, tutorial opcional, crecimiento, políticas, flota, transbordos, contratos, incidencias, estadio, historial, certificación y entrada sin pantalla de carga.
+
+Jugar: https://gomeza2.github.io/metro/ · [Validación de esta versión](docs/QA_0.25.md)
+
+## Refuerza donde hace falta
 
 La planificación de línea incorpora **reasignación de flota**: mueve un tren adicional desde otra línea por **$4**, en lugar de comprar otro. Cada línea conserva un tren base y el destino necesita una ruta de al menos dos estaciones y espacio dentro del máximo de tres trenes. Se retira el tren menos ocupado; antes de confirmar ves cuántos pasajeros volverán a su última estación. Allí esperan y recalculan su camino; no se eliminan. Los demás trenes mantienen posición y pasajeros. La operación deja el turno en pausa.
 
@@ -10,7 +31,7 @@ También puedes recuperar un refuerzo de una línea cuyo recorrido vaciaste. El 
 
 **Lo que pasa ahora** muestra ocupación/asientos reales de la flota, personas esperando en sus estaciones y viajeros sin camino al destino. Estos datos corresponden a la red actual, aunque estés previsualizando otra ruta o política. Una estación compartida cuenta en cada línea; su cola puede esperar diferentes servicios. Un botón abre la estación con mayor presión para inspeccionarla sin cambiar el recorrido, también desde móvil.
 
-Jugar: https://gomeza2.github.io/metro/ · [Validación de esta versión](docs/QA_0.24.md)
+Jugar: https://gomeza2.github.io/metro/ · [Validación de la etapa de refuerzos](docs/QA_0.24.md)
 
 ## Planificar, anticipar y aprender
 

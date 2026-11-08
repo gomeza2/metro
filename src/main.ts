@@ -1,3 +1,5 @@
+import { drawStationArt } from './stationArt';
+import { ConstructionBudget, constructionQuote, MAX_LINE_STOPS, MAX_TRACK_PACKS } from './simulation/constructionBudget';
 import { lineTelemetry } from './simulation/lineTelemetry';
 import { RouteDraft, routeImpact } from './simulation/routeDraft';
 import { incidentAt, approachingIncident } from './simulation/operatingIncidents';
@@ -29,6 +31,7 @@ const viewport = new MapViewport();
 let currentDpr = 0;
 function resizeMap(): void {
   const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return;
   viewport.width = rect.width;
   viewport.height = rect.height;
   currentDpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -48,7 +51,10 @@ const lines: MetroLine[] = COLORS.map((color, index) => ({
 }));
 
 // Rebuilt only when a route changes; passenger spawning reuses the same graph snapshot.
-const network = new NetworkCommands(stations, lines);
+const network = new NetworkCommands(stations, lines, (id, route) => buildQuote(id, route).ok);
+const construction = new ConstructionBudget();
+let limitedTrack = true;
+let trackPreference = true;
 
 let selectedLine = 0;
 let progressiveCity = true;
@@ -70,7 +76,8 @@ const completedPhaseObjectives = economy.completedPhases;
 let servicePlan: ServicePlanId = 'standard';
 let eventSeed = Math.floor(Math.random() * 0x100000000);
 const contracts = new ServiceContracts();
-const bestScoreKey = () => servicePlan === 'standard' && !progressiveCity && !incidentsEnabled ? 'cityflow.bestScore.v1' : `cityflow.bestScore.${servicePlan}${progressiveCity ? '.growth' : ''}${incidentsEnabled ? '.incidents' : ''}.v1`;
+const legacyBestScoreKey = () => servicePlan === 'standard' && !progressiveCity && !incidentsEnabled ? 'cityflow.bestScore.v1' : `cityflow.bestScore.${servicePlan}${progressiveCity ? '.growth' : ''}${incidentsEnabled ? '.incidents' : ''}.v1`;
+const bestScoreKey = () => legacyBestScoreKey() + (limitedTrack ? '.track' : '');
 function readBestScore(): number {
   try {
     const stored = Number(localStorage.getItem(bestScoreKey()) ?? 0);
@@ -144,6 +151,7 @@ function syncGrowth(notify = false): void {
   const select = $<HTMLSelectElement>('#station-access');
   select.innerHTML = '<option value="">Elige una estación…</option>' + stations.filter(station => station.active).map(station => `<option value="${station.id}">${station.name}</option>`).join('');
   growthKey = key;
+  if (notify && opened.length) viewport.reset();
   if (notify && opened.length) $('#map-status').textContent = `NUEVAS ESTACIONES · ${opened.map(station => station.name).join(' · ')} · Usa «Ver ciudad» para encontrarlas`;
 }
 function updateStartHint(): void {
@@ -154,7 +162,7 @@ function updateStartHint(): void {
   hint.classList.toggle('hidden', hintDismissed || !enabled || tutorialCompleted);
   const copy = {
     connect: ['01 / 04', 'Tu primera línea', progressiveCity ? 'Toca Barrio Norte y después Museo Central. El tren saldrá solo; el reloj espera esta conexión.' : 'Elige una línea y toca dos estaciones. El primer tren sale automáticamente.'],
-    observe: ['02 / 04', 'Observa el primer viaje', 'Los puntos son personas esperando. Deja que el tren recoja y entregue a la primera; puedes usar ½× para mirar con calma.'],
+    observe: ['02 / 04', 'Observa el primer viaje', 'Los puntos son personas; su color indica el tipo de destino. El tren recoge y entrega automáticamente. Prueba ½× para observar.'],
     plan: ['03 / 04', 'Pausa y piensa', 'Pulsa Pausa o Espacio. Puedes modificar rutas, comparar servicios y comprar mejoras sin que avance el tiempo.'],
     inspect: ['04 / 04', 'Mira antes de invertir', 'Activa Inspeccionar y toca una estación, o usa el selector. Mira los destinos y la cola antes de ampliar el servicio.'],
     done: ['', '', ''],
@@ -168,6 +176,7 @@ function addStationToSelectedLine(station: Station): void {
   if (!routeEditMode) {
     focusedStation = station;
     tutorialInspected = true;
+    openRoom('station');
     updateStationInspector();
     $('#map-status').textContent = `${station.name.toUpperCase()} · INSPECCIÓN DE ESTACIÓN`;
     return;
@@ -180,7 +189,9 @@ function addStationToSelectedLine(station: Station): void {
   }
   const result = network.selectStation(line.id, station.id);
   if (result === 'invalid') {
-    $('#map-status').textContent = 'RUTA NO DISPONIBLE · ELIGE UNA ESTACIÓN HABILITADA';
+    const index = line.stations.indexOf(station.id);
+    const quote = buildQuote(line.id, index >= 0 ? line.stations.slice(0, index + 1) : [...line.stations, station.id]);
+    $('#map-status').textContent = quote.ok ? 'RUTA NO DISPONIBLE · ELIGE UNA ESTACIÓN HABILITADA' : buildFailure(quote);
     return;
   }
   updateHUD();
@@ -332,7 +343,7 @@ function drawStation(station: Station, eventTarget = false, incidentTarget = fal
   };
   const accent = palette[station.kind];
   const markerScale = Math.max(1, 0.85 / Math.max(0.01, viewport.scale));
-  const radius = (connectedLines.length > 1 ? 13 : 11) * markerScale;
+  const radius = (connectedLines.length > 1 ? 16 : 14) * markerScale;
 
   if (station.queue.length > 0 || hovered || selected || focused) {
     const glow = ctx.createRadialGradient(station.x, station.y, 5, station.x, station.y, 42);
@@ -381,18 +392,7 @@ function drawStation(station: Station, eventTarget = false, incidentTarget = fal
   ctx.fillStyle = '#244334';
   ctx.fill();
 
-  const symbols: Record<StationKind, string> = {
-    residential: '⌂',
-    commerce: '¤',
-    culture: '✳',
-    civic: '+',
-    leisure: '◇',
-  };
-  ctx.fillStyle = '#f6f7ed';
-  ctx.font = `700 ${10 * markerScale}px Inter, "Segoe UI", sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(symbols[station.kind], station.x, station.y + .5);
+  drawStationArt(ctx, station.kind, station.x, station.y, radius - 5, station.id === 'stadium');
 
   if (connectedLines.length > 1) {
     connectedLines.forEach((line, index) => {
@@ -410,15 +410,15 @@ function drawStation(station: Station, eventTarget = false, incidentTarget = fal
   const visibleQueue = Math.min(station.queue.length, 5);
   for (let index = 0; index < visibleQueue; index += 1) {
     const angle = -Math.PI / 2 + (Math.PI * 2 * index) / Math.max(visibleQueue, 1);
-    const dotX = station.x + Math.cos(angle) * 23;
-    const dotY = station.y + Math.sin(angle) * 23;
+    const dotX = station.x + Math.cos(angle) * (radius + 12 * markerScale);
+    const dotY = station.y + Math.sin(angle) * (radius + 12 * markerScale);
     ctx.beginPath();
-    ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+    ctx.arc(dotX, dotY, 5 * markerScale, 0, Math.PI * 2);
     ctx.fillStyle = '#fffefa';
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(dotX, dotY, 2.4, 0, Math.PI * 2);
-    ctx.fillStyle = '#d9944e';
+    ctx.arc(dotX, dotY, 3.5 * markerScale, 0, Math.PI * 2);
+    ctx.fillStyle = palette[stationById(station.queue[index]!.destination).kind];
     ctx.fill();
   }
 
@@ -555,6 +555,13 @@ function render(): void {
     dpr * (viewport.width / 2 - viewport.x * scale), dpr * (viewport.height / 2 - viewport.y * scale));
   drawBackground();
   drawCityOverlay(ctx, simulationState.elapsed);
+  if (progressiveCity && activeLines() === 0 && !hintDismissed && $<HTMLInputElement>('#tutorial-enabled').checked) {
+    const home = stationById('north'), museum = stationById('museum');
+    ctx.save();ctx.strokeStyle='#315d6377';ctx.lineWidth=3 / scale;ctx.setLineDash([5/scale,8/scale]);
+    ctx.beginPath();ctx.moveTo(home.x,home.y);ctx.lineTo(museum.x,museum.y);ctx.stroke();ctx.setLineDash([]);
+    const next = lines[selectedLine]!.stations.length ? museum : home;
+    ctx.beginPath();ctx.arc(next.x,next.y,30/scale,0,Math.PI*2);ctx.strokeStyle='#315d63';ctx.lineWidth=2/scale;ctx.stroke();ctx.restore();
+  }
   for (const line of lines) drawLine(line);
   if (routeDraft && routeDraft.stations.length >= 2) {
     ctx.save();ctx.lineWidth = 6;ctx.lineCap = 'round';ctx.lineJoin = 'round';ctx.strokeStyle = lines[selectedLine]!.color;ctx.setLineDash([12,8]);ctx.beginPath();
@@ -677,14 +684,15 @@ function updateCityEvent(): void {
 }
 
 function updateHUD(): void {
+  updateConstruction();
   updateDraft();
   updateIncident();
   updateStartHint();
   const guidedOpening = progressiveCity && !hintDismissed && $<HTMLInputElement>('#tutorial-enabled').checked && simulationState.score < 1;
-  $('#line-operations').hidden = guidedOpening;
-  $('.upgrade-strip').hidden = guidedOpening;
+  $('#line-operations').hidden = guidedOpening && $('#control-room').hidden;
+  $('.upgrade-strip').hidden = guidedOpening && $('#control-room').hidden;
   $('.contract-card').hidden = progressiveCity && !hintDismissed && simulationState.elapsed < 30;
-  $('.station-card').hidden = guidedOpening && routeEditMode;
+  $('.station-card').hidden = false;
   updateLineOperations();
   const growth = cityGrowthAt(simulationState.elapsed, progressiveCity);
   $('#growth-fit').hidden = !progressiveCity || growth.ids.length <= 3;
@@ -824,6 +832,7 @@ function selectLine(index: number): void {
 function startGame(): void {
   gameStarted = true;
   $<HTMLInputElement>('#incidents-enabled').disabled = true;
+  $<HTMLInputElement>('#limited-track').disabled = true;
   $<HTMLSelectElement>('#service-plan').disabled = true;
   $<HTMLInputElement>('#progressive-city').disabled = true;
   $<HTMLInputElement>('#tutorial-enabled').disabled = true;
@@ -835,8 +844,9 @@ function startGame(): void {
   $('.layout').removeAttribute('inert');
   $('.topbar').removeAttribute('inert');
   $('#map-status').textContent = 'EL RELOJ ESPERA · CONECTA DOS ESTACIONES';
+  resizeMap();
   if (progressiveCity && simulationState.elapsed === 0 && activeLines() === 0) {
-    viewport.reset(); viewport.zoomAt(1.5);
+    viewport.reset(); viewport.zoomAt(Math.min(3, Math.max(1.5, viewport.height / (460 * viewport.scale))));
     viewport.pan(140 * viewport.scale, 70 * viewport.scale);
   }
   lastFrame = 0;
@@ -846,6 +856,7 @@ function startGame(): void {
 
 function openMainMenu(): void {
   if (!gameStarted) return;
+  closeRoom();
   paused = true;
   document.body.classList.add('menu-active');
   $('#main-menu').classList.remove('is-closed');
@@ -960,6 +971,8 @@ function toggleSound(): void {
 
 function restartGame(): void {
   routeDraft = null;
+  closeRoom();
+  construction.reset();
   network.reset();
   selectedLine = 0;
   hintDismissed = false;
@@ -1093,8 +1106,12 @@ $('#new-shift').addEventListener('click', () => {
   gameStarted = false;
   paused = true;
   $<HTMLSelectElement>('#service-plan').disabled = false;
+  $<HTMLInputElement>('#limited-track').disabled = ['sandbox','challenge'].includes(servicePlan);
   $<HTMLInputElement>('#incidents-enabled').disabled = servicePlan === 'rush';
   $<HTMLInputElement>('#progressive-city').disabled = !['standard','relaxed'].includes(servicePlan);
+  limitedTrack = !['sandbox','challenge'].includes(servicePlan) && trackPreference;
+  $<HTMLInputElement>('#limited-track').checked = limitedTrack;
+  $<HTMLInputElement>('#limited-track').disabled = gameStarted || ['sandbox','challenge'].includes(servicePlan);
   $<HTMLInputElement>('#incidents-enabled').disabled = gameStarted || servicePlan === 'rush';
   $<HTMLInputElement>('#tutorial-enabled').disabled = false;
   document.body.classList.add('menu-active');
@@ -1141,6 +1158,9 @@ function updateContracts(): void {
   });
 }
 function configureGrowth(): void {
+  limitedTrack = !['sandbox','challenge'].includes(servicePlan) && trackPreference;
+  $<HTMLInputElement>('#limited-track').checked = limitedTrack;
+  $<HTMLInputElement>('#limited-track').disabled = gameStarted || ['sandbox','challenge'].includes(servicePlan);
   progressiveCity = ['standard','relaxed'].includes(servicePlan) && $<HTMLInputElement>('#progressive-city').checked;
   $<HTMLInputElement>('#progressive-city').disabled = !['standard','relaxed'].includes(servicePlan);
   $<HTMLInputElement>('#incidents-enabled').disabled = gameStarted || servicePlan === 'rush';
@@ -1156,6 +1176,7 @@ $('#incidents-enabled').addEventListener('change', () => {
 });
 function beginDraft(): void {
   if (!gameStarted || gameOver || routeDraft) return;
+  closeRoom();
   paused = true; tutorialPaused = true; routeEditMode = true;
   routeDraft = new RouteDraft(selectedLine, lines[selectedLine]!.stations, new Set(stations.filter(station => station.active !== false).map(station => station.id)));
   $('#map-status').textContent = 'BORRADOR · Toca estaciones, compara y aplica. El tiempo está detenido.';
@@ -1185,7 +1206,9 @@ function updateDraft(): void {
   const impact = routeImpact(stations, lines, routeDraft);
   $('#draft-impact').textContent = `Red conectada: ${impact.before} → ${impact.after} estaciones. ${impact.disconnected} personas quedarían esperando sin ruta. No se eliminan pasajeros.`;
   $('#draft-panel').classList.toggle('has-warning', impact.disconnected > 0);
-  $<HTMLButtonElement>('#apply-draft').disabled = !routeDraft.changed;
+  const quote = buildQuote(routeDraft.lineId, routeDraft.stations);
+  $('#draft-resources').textContent = limitedTrack ? `Vía: ${quote.used}/${quote.capacity} · ${routeDraft.stations.length}/${MAX_LINE_STOPS} paradas${quote.ok ? '' : ' · ' + buildFailure(quote)}` : 'Construcción libre: sin límite de vía.';
+  $<HTMLButtonElement>('#apply-draft').disabled = !routeDraft.changed || !quote.ok;
 }
 function updateIncident(): void {
   const active = incidentAt(simulationState.elapsed,eventSeed,incidentsEnabled);
@@ -1203,13 +1226,13 @@ function updateIncident(): void {
   $('#incident-copy').textContent = 'Durante 30 s, los tramos que tocan esta estación circulan al 65% de su velocidad. Puedes planificar un desvío o reforzar el servicio; la estación sigue abierta.';
 }
 $('#operating-alert').addEventListener('click', () => {
-  $('.side-panel').dataset.mobilePanel = 'missions';
+  openRoom('missions');
   document.querySelectorAll<HTMLButtonElement>('[data-panel]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.panel === 'missions')));
   $('#incident-panel').scrollIntoView({ block:'center' });
   $('#incident-title').focus();
 });
 function saveRun(outcome: RunOutcome): void {
-  history = appendRun(history,{mode:servicePlan,outcome,score:simulationState.score,elapsed:simulationState.elapsed,phases:completedPhaseObjectives.size,grants:contracts.completed.size,progressive:progressiveCity,incidents:incidentsEnabled});
+  history = appendRun(history,{mode:servicePlan,outcome,score:simulationState.score,elapsed:simulationState.elapsed,phases:completedPhaseObjectives.size,grants:contracts.completed.size,progressive:progressiveCity,incidents:incidentsEnabled,...(limitedTrack ? {limitedTrack:true} : {})});
   try { localStorage.setItem(HISTORY_KEY,JSON.stringify(history)); } catch { /* Keep the current session's history in memory. */ }
   renderHistory();
 }
@@ -1220,7 +1243,7 @@ function renderHistory(): void {
   for (const record of history) {
     const item = document.createElement('li');
     const minutes = Math.floor(record.elapsed / 60), seconds = Math.floor(record.elapsed % 60);
-    item.textContent = `${SERVICE_PLANS[record.mode].name} · ${record.score} viajes · ${minutes}:${String(seconds).padStart(2,'0')} · ${outcomes[record.outcome]} · ${record.grants}/3 contratos${record.progressive ? ' · Ciudad progresiva' : ''}${record.incidents ? ' · Con incidencias' : ''}`;
+    item.textContent = `${SERVICE_PLANS[record.mode].name} · ${record.score} viajes · ${minutes}:${String(seconds).padStart(2,'0')} · ${outcomes[record.outcome]} · ${record.grants}/3 contratos${record.progressive ? ' · Ciudad progresiva' : ''}${record.incidents ? ' · Con incidencias' : ''}${record.limitedTrack ? ' · Vía limitada' : ''}`;
     list.append(item);
   }
 }
@@ -1236,6 +1259,46 @@ $('#apply-policy').addEventListener('click', () => {
   if (network.setPolicy(selectedLine, policyPreview, simulationState)) $('#map-status').textContent = 'Servicio actualizado. Cada tren lo adopta en su próxima parada.';
   policyPreview = null; updateHUD();
 });
+function buildQuote(id: number, route: readonly string[]) {
+  return constructionQuote(stations, lines, id, route, limitedTrack ? construction.capacity(stations.filter(station => station.active !== false).length) : Infinity);
+}
+function buildFailure(quote: ReturnType<typeof buildQuote>): string {
+  return quote.reason === 'stops' ? `Máximo ${MAX_LINE_STOPS} paradas por línea. Crea un transbordo con otra línea.` : `Faltan ${Math.max(0, quote.used - quote.capacity)} unidades de vía. Acorta otra ruta o compra material.`;
+}
+function updateConstruction(): void {
+  const quote = buildQuote(selectedLine, lines[selectedLine]!.stations);
+  $('#track-state').textContent = limitedTrack ? `Vía ${quote.used} / ${quote.capacity}` : 'Vía libre';
+  $('#track-state').title = 'Material usado / disponible para toda la red. Los tramos largos consumen más; acortar rutas libera vía.';
+  const button = $<HTMLButtonElement>('#expand-track');
+  button.hidden = !limitedTrack;
+  button.textContent = construction.packs >= MAX_TRACK_PACKS ? 'Material al máximo' : `+5 vía · $${construction.cost}`;
+  button.disabled = !gameStarted || gameOver || !!routeDraft || construction.packs >= MAX_TRACK_PACKS || simulationState.credits < construction.cost;
+  const phase = getShiftPhaseIndex(simulationState.elapsed);
+  const goal = phaseGoal(phase, simulationState, lines);
+  $('#focus-goal').textContent = activeLines() === 0 ? (progressiveCity ? 'Une Barrio Norte con Museo Central' : 'Conecta dos estaciones para empezar') : getShiftPhase(simulationState.elapsed).goal;
+  $('#focus-progress').textContent = activeLines() === 0 ? 'Toca una estación y después la otra. El tren sale solo.' : `${Math.min(goal.current, goal.target)} / ${goal.target} · ${completedPhaseObjectives.has(phase) ? 'Objetivo cumplido' : 'Evita las colas y adapta tu red'}`;
+  if (servicePlan === 'challenge') { $('#focus-goal').textContent = 'Certifica: 30 viajes, 8 estaciones y 2 contratos'; $('#focus-progress').textContent = `${Math.max(0, Math.ceil(320 - simulationState.elapsed))} segundos para completar los tres objetivos`; }
+}
+$('#expand-track').addEventListener('click', () => {
+  if (!gameStarted || gameOver || routeDraft || !limitedTrack) return;
+  if (construction.expand(simulationState)) { $('#map-status').textContent = 'MATERIAL RECIBIDO · +5 unidades de vía. Elige dónde construir.'; updateHUD(); }
+});
+$('#limited-track').addEventListener('change', () => { if (!gameStarted) { trackPreference = $<HTMLInputElement>('#limited-track').checked; configureGrowth(); bestScore = readBestScore(); updateHUD(); } });
+function openRoom(panel = 'operations'): void {
+  const room = $('#control-room'); room.hidden = false; room.dataset.mobilePanel = panel;
+  if (gameStarted && !gameOver) { paused = true; tutorialPaused = true; }
+  $('#open-room').setAttribute('aria-expanded', 'true');
+  document.querySelectorAll<HTMLButtonElement>('[data-panel]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.panel === panel)));
+  $<HTMLDetailsElement>('#line-operations').open = true;
+  updateHUD();
+}
+function closeRoom(): void { $('#control-room').hidden = true; $('#open-room').setAttribute('aria-expanded','false'); }
+$('#open-room').addEventListener('click', () => { if ($('#control-room').hidden) openRoom(); else closeRoom(); });
+$('#close-room').addEventListener('click', () => { closeRoom(); $('#open-room').focus(); });
+$('#focus-objective').addEventListener('click', () => openRoom('missions'));
+// Reuse every existing management control in a drawer, rather than below the map.
+$('#control-room').append($('#line-operations'), $('.upgrade-strip'));
+$('.control-dock').append($('.playback-row'));
 let routeMarkupKey = '';
 function updateLineOperations(): void {
   const line = lines[selectedLine]!;
@@ -1265,7 +1328,7 @@ function updateLineOperations(): void {
 function inspectFromOperations(id: string): void {
   focusedStation = stationById(id);
   tutorialInspected = true;
-  $('.side-panel').dataset.mobilePanel = 'station';
+  openRoom('station');
   document.querySelectorAll<HTMLButtonElement>('[data-panel]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.panel === 'station')));
   updateStationInspector();
   $('#station-name').scrollIntoView({ block: 'center' });
@@ -1399,7 +1462,7 @@ window.addEventListener('keydown', (event) => {
     event.preventDefault();
     togglePause();
   }
-  if (event.key === 'Escape') { $('#help-popover').classList.add('hidden'); if (routeDraft) discardDraft(); }
+  if (event.key === 'Escape') { $('#help-popover').classList.add('hidden'); if (routeDraft) discardDraft(); else closeRoom(); }
 });
 
 const overview = $<HTMLCanvasElement>('#menu-city-map');

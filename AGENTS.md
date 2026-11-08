@@ -20,3 +20,7 @@ Use the existing checkout; do not create a worktree unless requested. Node >=20 
 - Run history is optional, validated local data, limited to eight summaries; storage failures must not block gameplay.
 
 - Fleet reassignment preserves total fleet, a base train per line, all passengers and unaffected train positions. Validate funds before mutation; live telemetry must use actual train policies, not UI previews.
+
+- The active game is a viewport, not a scrolling document. Keep map, objective and playback reachable; management lives in #control-room, pauses on open, and has its own scroll.
+- Use scripts/control-room.mjs in browser QA to open the appropriate panel and resume explicitly. Match Canvas taps to the adaptive opening camera.
+- Construction validation must happen before live topology/fleet mutation. Track is derived from route geometry and released on shortening; classic/sandbox/certification retain unrestricted construction. Keep .track records separate.

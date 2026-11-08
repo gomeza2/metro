@@ -282,15 +282,18 @@ function drawStaticCity(ctx: CanvasRenderingContext2D): void {
 const CITY_LAYER_WIDTH = 1200;
 const CITY_LAYER_HEIGHT = 760;
 let cachedCityLayer: HTMLCanvasElement | null = null;
+let cachedResolution = 0;
 
-function getStaticCityLayer(): HTMLCanvasElement | null {
-  if (cachedCityLayer) return cachedCityLayer;
+function getStaticCityLayer(resolution: number): HTMLCanvasElement | null {
+  if (cachedCityLayer && cachedResolution >= resolution) return cachedCityLayer;
   const layer = document.createElement('canvas');
-  layer.width = CITY_LAYER_WIDTH;
-  layer.height = CITY_LAYER_HEIGHT;
+  layer.width = CITY_LAYER_WIDTH * resolution;
+  layer.height = CITY_LAYER_HEIGHT * resolution;
   const layerContext = layer.getContext('2d');
   if (!layerContext) return null;
+  layerContext.setTransform(resolution, 0, 0, resolution, 0, 0);
   drawStaticCity(layerContext);
+  cachedResolution = resolution;
   cachedCityLayer = layer;
   return cachedCityLayer;
 }
@@ -312,8 +315,9 @@ function drawWaterHighlights(ctx: CanvasRenderingContext2D, time: number): void 
 
 /** Paints Port Azure's static illustration once and reuses the cached layer. */
 export function drawCityOverlay(ctx: CanvasRenderingContext2D, time: number): void {
-  const layer = getStaticCityLayer();
-  if (layer) ctx.drawImage(layer, 0, 0);
+  const resolution = Math.min(2, Math.max(1, Math.ceil(Math.abs(ctx.getTransform().a))));
+  const layer = getStaticCityLayer(resolution);
+  if (layer) ctx.drawImage(layer, 0, 0, CITY_LAYER_WIDTH, CITY_LAYER_HEIGHT);
   else drawStaticCity(ctx);
   drawWaterHighlights(ctx, time);
 }

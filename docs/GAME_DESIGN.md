@@ -330,3 +330,24 @@ La lectura de línea separa estimaciones de ciclo/frecuencia y observaciones rea
 - [ ] Equilibrio con jugadores: coste de reasignación frente a compras por línea y políticas.
 - [ ] Separación del renderizador y medición en dispositivos reales.
 - [ ] Nuevos escenarios, guardado reanudable y campaña continúan pendientes.
+
+
+## v0.25 — corregir el núcleo de la experiencia
+
+La devolución del jugador señala falta de claridad, demasiados paneles, desplazamiento incómodo, construcción trivial y poca conexión entre demanda y decisiones. Esta etapa cambia el espacio de juego: mapa y controles esenciales permanecen en pantalla; el centro de control aparece al pedirlo y pausa el tiempo. La misión es visible y la guía inicial señala físicamente la primera conexión. La consulta a la página oficial de Mini Motorways fue bloqueada por el proxy del entorno; esta etapa no se presenta como investigación web realizada ni copia de gráficos o interfaz.
+
+La restricción de construcción obliga a repartir una reserva de vía entre líneas. Los tramos cortos ahorran material y las seis paradas máximas hacen necesarios los transbordos para cubrir toda la ciudad. Comprar material compite con frecuencia, capacidad y andenes. Cambiar recorridos devuelve el material, por lo que explorar una alternativa en pausa no castiga con costes irrecuperables. El traslado de trenes de 0.24 sigue aportando flexibilidad dentro de esa red.
+
+La construcción clásica está disponible antes del turno; modo libre y certificación conservan las condiciones previas. Los colores de pasajeros corresponden al tipo de destino y los hitos tienen símbolos propios. Son ayudas de lectura, no una simulación urbana realista ni una garantía de diversión demostrada mediante tests.
+
+### Criterios de esta etapa
+
+- [x] Mapa, misión y controles esenciales en el viewport, sin scroll de documento durante el juego.
+- [x] Paneles a petición con pausa y regreso explícito al mapa.
+- [x] Guía inicial sobre el mapa y objetivos con progreso real.
+- [x] Material por longitud, máximo de paradas, compras y vista previa validada.
+- [x] Compatibilidad clásica, conservación de pasajeros y separación de récords.
+- [ ] Pruebas con jugadores sobre claridad de destinos, ritmo y equilibrio de material.
+- [ ] Edición por arrastre de extremos, orientación de demanda más explícita y tutorial de transbordos.
+- [ ] Nueva dirección artística de ciudad con hitos más detallados y mapas adicionales.
+- [ ] Renderizador independiente, rendimiento real en móviles y guardado reanudable.

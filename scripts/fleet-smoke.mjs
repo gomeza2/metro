@@ -1,3 +1,4 @@
+import {showPanel, returnToMap} from './control-room.mjs';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
@@ -12,18 +13,18 @@ try{
   await page.addInitScript(()=>{Math.random=()=>0;window.requestAnimationFrame=cb=>setTimeout(()=>cb(performance.now()),50);window.cancelAnimationFrame=id=>clearTimeout(id);});
   await page.goto(base);await page.waitForSelector('#start-game:not([disabled])');
   await page.selectOption('#service-plan','sandbox');await page.uncheck('#tutorial-enabled');await page.click('#start-game');await page.click('#pause-button');
-  const stationTab=async()=>{if(width<=620)await page.click('[data-panel="station"]');};
+  const stationTab=async()=>showPanel(page,'station');
   const connect=async id=>{await stationTab();await page.selectOption('#station-access',id);await page.click('#station-connect');};
-  const operations=async()=>{if(await page.locator('#line-operations').getAttribute('open')===null)await page.click('#line-operations > summary');};
+  const operations=async()=>{await showPanel(page,'operations');if(await page.locator('#line-operations').getAttribute('open')===null)await page.click('#line-operations > summary');};
   const transfer=async()=>{await operations();if(await page.locator('.fleet-transfer').getAttribute('open')===null)await page.click('.fleet-transfer > summary');};
   const funds=()=>page.locator('#credits').textContent().then(text=>Number(text.replace('$','')));
   const people=async()=>page.evaluate(()=>Number(document.querySelector('#waiting').textContent)+Number(document.querySelector('#in-transit').textContent)+Number(document.querySelector('#score').textContent));
-  await connect('north');await connect('museum');await connect('market');await page.click('#dispatch-button');
+  await connect('north');await connect('museum');await connect('market');await operations();await page.click('#dispatch-button');
   await page.click('[data-line="1"]');await connect('museum');await connect('civic');await transfer();
   assert.equal(await page.locator('#line-load').textContent(),'0 / 6');assert.equal(await page.locator('#transfer-train').isEnabled(),true);
   assert.match(await page.locator('#transfer-preview').textContent(),/Destino: 1 → 2 trenes/);
   await page.selectOption('#line-policy','local');assert.match(await page.locator('#policy-seats').textContent(),/9 por tren/);assert.equal(await page.locator('#line-load').textContent(),'0 / 6');await page.selectOption('#line-policy','balanced');
-  await page.click('#plan-route');await connect('harbor');assert.equal(await page.locator('#line-load').textContent(),'0 / 6');assert.equal(await page.locator('#transfer-train').isDisabled(),true);await page.keyboard.press('Escape');
+  await page.click('#plan-route');await connect('harbor');assert.equal(await page.locator('#line-load').textContent(),'0 / 6');assert.equal(await page.locator('#transfer-train').isDisabled(),true);await page.keyboard.press('Escape');await transfer();
   await page.click('#pause-button');const before=await funds(),count=await people();await page.click('#transfer-train');
   assert.equal(await funds(),before-4);assert.equal(await people(),count);assert.equal(await page.locator('#pause-button').getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#line-load').textContent(),'0 / 12');assert.equal(await page.locator('#transfer-train').isDisabled(),true);
@@ -39,7 +40,7 @@ try{
   const priority=await page.locator('#line-priority').getAttribute('data-station');await page.click('#line-priority');
   assert.equal(await page.locator('#station-access').inputValue(),priority);assert.equal(await page.locator('#station-name').evaluate(node=>node===document.activeElement),true);
   if(width<=620)assert.equal(await page.locator('[data-panel="station"]').getAttribute('aria-pressed'),'true');
-  await page.click('#line-route [data-inspect-station="market"]');assert.equal(await page.locator('#station-access').inputValue(),'market');
+  await operations();await page.click('#line-route [data-inspect-station="market"]');assert.equal(await page.locator('#station-access').inputValue(),'market');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
   page.on('dialog',dialog=>dialog.accept());await page.click('#new-shift');await page.click('#start-game');await operations();await transfer();assert.equal(await page.locator('#transfer-train').isDisabled(),true);assert.equal(await page.locator('#line-load').textContent(),'0 / 0');
   await page.close();console.log(`${name}: fleet transfer, paused draft guard, reserve recovery, live telemetry, inspection focus and reset passed`);

@@ -1,3 +1,4 @@
+import {showPanel, returnToMap} from './control-room.mjs';
 // Optional browser QA. Pass an installed Playwright module through PLAYWRIGHT_MODULE.
 // No browser dependency is added to the application bundle or package manifest.
 import assert from 'node:assert/strict';
@@ -43,20 +44,20 @@ try {
     assert.equal(await page.locator('#pause-button').getAttribute('aria-pressed'),'false');
     await page.click('#pause-button');
     // Keyboard-accessible selection, transfer network, contract reward.
-    if (width <= 620) await page.click('[data-panel="station"]');
-    const connect = async id => { await page.selectOption('#station-access',id); await page.click('#station-connect'); };
+    await showPanel(page,'station');
+    const connect = async id => { await showPanel(page,'station'); await page.selectOption('#station-access',id); await page.click('#station-connect'); };
     await connect('market');
-    if (width <= 620) await page.click('[data-panel="grants"]');
+    await showPanel(page,'grants');
     await page.click('[data-contract="coverage"]');
-    if (width <= 620) await page.click('[data-panel="station"]');
+    await showPanel(page,'station');
     for (const id of ['civic','east','university','stadium','heights']) await connect(id);
-    await page.click('#pause-button');
+    await returnToMap(page,true);
     await page.waitForFunction(() => document.querySelector('#grant-count').textContent.startsWith('1'));
     await page.click('#pause-button');
     assert.equal(await page.locator('#credits').textContent(), '$164');
-    await page.click('#capacity-button');assert.equal(await page.locator('#credits').textContent(),'$152');
+    await showPanel(page,'operations');await page.click('#capacity-button');assert.equal(await page.locator('#credits').textContent(),'$152');
     await page.click('#dispatch-button');assert.equal(await page.locator('#fleet-state').textContent(),'Flota · 2/3 trenes');
-    await page.click('#map-mode-button');
+    await returnToMap(page);await page.click('#map-mode-button');
     assert.equal(await page.locator('#map-mode-button').getAttribute('aria-pressed'),'true');
     // Zoom and drag must not edit the network. Fit restores coordinate mapping.
     await page.click('#zoom-in');await page.locator('#game-canvas').scrollIntoViewIfNeeded();

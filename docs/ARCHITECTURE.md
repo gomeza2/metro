@@ -125,3 +125,11 @@ The GitHub Actions build workflow runs the tests first, then strict TypeScript c
 5. Add deterministic end-to-end scenario tests for multi-line transfers, fleet spacing, phase rewards, and restart behavior.
 
 The next steps are deliberately ordered around correctness first. New cities, campaign progression, and larger passenger populations become much safer once these boundaries are in place.
+
+## v0.18 — map viewport and shared city data
+
+`cityMap.ts` owns the fourteen immutable station definitions; `createCityStations()` gives every run fresh queues. The menu canvas uses these coordinates and the same cached scenery as the playable map.
+
+`MapViewport` owns the uniform world-to-CSS transform and its inverse, bounded zoom (1–3×), cursor-anchored zoom and bounded panning. `ResizeObserver` sizes the backing store; DPR changes trigger a refresh. Hit testing uses the same inverse transform with a CSS-pixel minimum target. Pointer capture separates taps from drags and cancels incomplete gestures. Ordinary wheel scrolling remains page scrolling; Ctrl/Meta+wheel zooms. Fit restores full-city visibility. The station selector offers a keyboard alternative to spatial input.
+
+The release stylesheet `command.css` builds on the existing component styles. No fonts, images or mandatory services are downloaded at runtime. Browser validation covers both desktop and mobile; real-device touch testing remains outstanding.

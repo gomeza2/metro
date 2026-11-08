@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="cityflow-version" content="0.17.0" />
+    <meta name="cityflow-version" content="0.18.0" />
     <meta name="theme-color" content="#0b1716" />
     <meta name="description" content="CITYFLOW — a calm, challenging urban transit strategy game." />
     <title>CITYFLOW — Urban Transit Strategy</title>
@@ -13,6 +13,7 @@
       #loading-screen button { padding:12px 20px; cursor:pointer; }
     </style>
     <link rel="stylesheet" href="./src/style.css" />
+    <link rel="stylesheet" href="./src/command.css" />
   </head>
   <body class="menu-active">
     <div id="app">
@@ -22,7 +23,7 @@
           <div class="loading-brand">
             <span class="brand-mark"><i></i><i></i><i></i></span>
             <span>CITYFLOW</span>
-            <span class="loading-version">0.17</span>
+            <span class="loading-version">0.18</span>
           </div>
           <p class="loading-kicker">PORT AZURE · TRANSIT CONTROL</p>
           <h1>Preparing your city<span>.</span></h1>
@@ -46,7 +47,7 @@
             <a class="menu-brand" href="#" aria-label="CITYFLOW home">
               <span class="brand-mark"><i></i><i></i><i></i></span>
               <span>CITYFLOW</span>
-              <span class="menu-version">0.17</span>
+              <span class="menu-version">0.18</span>
             </a>
             <div class="menu-nav-meta">
               <span class="menu-online"><i></i> PLAYABLE CITY SIMULATOR</span>
@@ -84,66 +85,7 @@
                   <div><span class="menu-map-overline">CITY OVERVIEW / 14 STATIONS</span><strong>PORT AZURE</strong></div>
                   <span class="menu-live"><i></i> CITY MAP</span>
                 </div>
-                <svg class="menu-map-art" viewBox="0 0 720 456" role="img" aria-label="Port Azure city map with its fourteen stations, coastline, districts and an example metro line">
-  <defs>
-    <pattern id="menu-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-      <path d="M28 0H0V28" fill="none" stroke="#cbd8cb" stroke-width="1" opacity=".48"/>
-    </pattern>
-    <filter id="menu-station-shadow" x="-100%" y="-100%" width="300%" height="300%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#425c4a" flood-opacity=".22"/>
-    </filter>
-  </defs>
-  <rect width="720" height="456" fill="#edf1e8"/>
-  <rect width="720" height="456" fill="url(#menu-grid)"/>
-  <path d="M664 -10 C642 62 664 108 648 164 S674 254 646 314 S671 405 652 466 L730 466 L730 -10Z" fill="#c5dfe0"/>
-  <path d="M664 -10 C642 62 664 108 648 164 S674 254 646 314 S671 405 652 466" fill="none" stroke="#fffefa" stroke-width="4"/>
-  <path d="M35 234 C170 220 248 252 365 234 S535 245 646 234 M30 62 L195 67 L310 86 L490 72 L628 86 M42 398 L208 388 L322 398 L493 384 L640 398" fill="none" stroke="#d6dfd5" stroke-width="15" stroke-linecap="round"/>
-  <path d="M35 234 C170 220 248 252 365 234 S535 245 646 234 M30 62 L195 67 L310 86 L490 72 L628 86 M42 398 L208 388 L322 398 L493 384 L640 398" fill="none" stroke="#fffefa" stroke-width="10" stroke-linecap="round"/>
-  <path d="M180 18 L185 140 L174 258 L190 430 M310 12 L300 150 L315 265 L304 430 M492 12 L480 145 L494 263 L484 430" fill="none" stroke="#d8e0d6" stroke-width="10" stroke-linecap="round"/>
-  <path d="M180 18 L185 140 L174 258 L190 430 M310 12 L300 150 L315 265 L304 430 M492 12 L480 145 L494 263 L484 430" fill="none" stroke="#fffefa" stroke-width="6" stroke-linecap="round"/>
-  <rect x="114" y="139" width="112" height="72" rx="18" fill="#dbe9d6" stroke="#cadbc7"/>
-  <path d="M124 191 Q165 145 215 167" fill="none" stroke="#fffefa" stroke-width="3"/>
-  <g fill="#b5cdaa"><circle cx="132" cy="160" r="6"/><circle cx="162" cy="190" r="7"/><circle cx="200" cy="153" r="6"/><circle cx="215" cy="188" r="5"/></g>
-  <rect x="535" y="330" width="84" height="61" rx="14" fill="#dce9d8" stroke="#cadbc7"/>
-  <g fill="#b5cdaa"><circle cx="549" cy="344" r="5"/><circle cx="580" cy="375" r="6"/><circle cx="604" cy="345" r="5"/></g>
-  <rect x="590" y="44" width="80" height="23" rx="6" fill="#d6ded3"/>
-  <path d="M598 55H662" stroke="#fffefa" stroke-width="2" stroke-dasharray="7 7"/>
-  <ellipse cx="624" cy="141" rx="34" ry="22" fill="#d8e4d5"/>
-  <ellipse cx="624" cy="141" rx="27" ry="16" fill="none" stroke="#fffefa" stroke-width="6"/>
-  <ellipse cx="624" cy="141" rx="18" ry="10" fill="#a9c6a6"/>
-  <rect x="450" y="104" width="54" height="49" rx="8" fill="#dfe7dc" stroke="#cbd8ca"/>
-  <rect x="458" y="112" width="38" height="33" rx="4" fill="none" stroke="#fffefa" stroke-width="3"/>
-  <rect x="470" y="119" width="14" height="19" rx="2" fill="#c5d8c1"/>
-  <path d="M87 213 Q150 119 252 78 T318 171 T234 264" fill="none" stroke="#fffefa" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M87 213 Q150 119 252 78 T318 171 T234 264" fill="none" stroke="#e47762" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M87 213 Q150 119 252 78 T318 171 T234 264" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 14" opacity=".9"/>
-  <g filter="url(#menu-station-shadow)">
-    <g fill="#fffefa" stroke="#e47762" stroke-width="4">
-      <circle cx="87" cy="213" r="9"/><circle cx="150" cy="119" r="9"/><circle cx="252" cy="78" r="9"/><circle cx="318" cy="171" r="9"/><circle cx="234" cy="264" r="9"/>
-    </g>
-    <g fill="#fffefa" stroke="#8da98f" stroke-width="3">
-      <circle cx="390" cy="267" r="8"/><circle cx="502" cy="203" r="8"/><circle cx="452" cy="102" r="8"/><circle cx="624" cy="141" r="8"/><circle cx="600" cy="306" r="8"/><circle cx="493" cy="366" r="8"/><circle cx="313" cy="372" r="8"/><circle cx="156" cy="354" r="8"/><circle cx="654" cy="60" r="8"/>
-    </g>
-  </g>
-  <g fill="#4b6954" font-family="ui-monospace,monospace" font-size="10" font-weight="700" letter-spacing=".8">
-    <text x="26" y="197">OLD HARBOR</text>
-    <text x="120" y="100">WEST GARDENS</text>
-    <text x="222" y="56">NORTH QUARTER</text>
-    <text x="331" y="160">MUSEUM MILE</text>
-    <text x="174" y="288">CENTRAL MARKET</text>
-    <text x="380" y="290">CIVIC SQUARE</text>
-    <text x="514" y="189">EASTBANK</text>
-    <text x="575" y="117">GRAND STADIUM</text>
-    <text x="516" y="385">RIVERSIDE CLINIC</text>
-    <text x="260" y="399">SOUTH PIER</text>
-    <text x="612" y="35">AIRFIELD</text>
-  </g>
-  <g transform="translate(682 108)">
-    <circle r="16" fill="#fffefa" stroke="#d7e1d6"/>
-    <path d="M0 -9 L3 0 L0 9 L-3 0Z" fill="#4e795a"/>
-    <text x="0" y="26" fill="#6d8874" font-family="ui-monospace,monospace" font-size="8" text-anchor="middle">N</text>
-  </g>
-</svg>
+                <canvas id="menu-city-map" class="menu-map-art" aria-label="Port Azure: the same fourteen stations and coastal geography as the playable city"></canvas>
                 <div class="menu-map-legend">
                   <span><i class="legend-coral"></i> SAMPLE SERVICE</span><span><i class="legend-green"></i> 14 STATIONS</span><span><i class="legend-blue"></i> COASTLINE</span>
                 </div>
@@ -171,7 +113,7 @@
               <article><span>05 · 15:30+</span><b>Afternoon &amp; evening commute</b><small>Balance the growing commute and city demand.</small></article>
             </div>
           </section>
-          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.17.0</span></footer>
+          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.18.0</span></footer>
         </div>
       </section>
 
@@ -193,19 +135,27 @@
         <section class="game-column">
           <div class="intro-row">
             <div>
-              <p class="eyebrow">URBAN NETWORK SIMULATOR <span>•</span> PORT AZURE</p>
-              <h1>Make the city <em>move.</em></h1>
-              <p class="subtitle">Connect places. Move people. Think one step ahead.</p>
+              <p class="eyebrow">OPERATIONS DESK <span> / </span> COASTAL DIVISION</p>
+              <h1>Port Azure<span class="city-heading-detail">Network control</span></h1>
+              <p class="subtitle">A connected city starts with one good line.</p>
             </div>
-            <div class="city-tag"><span class="sun-icon">◒</span><span>PORT AZURE</span><small>Temperate · Coastal</small></div>
+            <div class="playback-row">
+              <button id="pause-button" class="pause-button" type="button"><span>Ⅱ</span> Pause</button>
+              <div class="speed-control" aria-label="Simulation speed">
+                <button data-speed="1" class="speed-button active" type="button">1×</button>
+                <button data-speed="2" class="speed-button" type="button">2×</button>
+                <button data-speed="3" class="speed-button" type="button">3×</button>
+              </div>
+            </div><div class="city-tag"><span class="sun-icon">◒</span><span>PORT AZURE</span><small>Temperate · Coastal</small></div>
           </div>
 
           <section class="game-frame" aria-label="CITYFLOW game">
             <div class="map-topline">
               <div><span class="map-live-dot"></span> PORT AZURE <span class="map-separator">/</span> LIVE NETWORK</div>
-              <div class="map-top-actions"><span class="map-coordinates">35° 41' N&nbsp;&nbsp; 139° 41' E</span><button id="map-mode-button" class="map-mode-button" type="button" aria-pressed="false"><span class="mode-icon">⌁</span><span><b>Edit route</b><small>Tap stations to connect</small></span></button></div>
+              <div class="map-top-actions"><span class="map-coordinates">CTRL + SCROLL TO ZOOM</span><button id="map-mode-button" class="map-mode-button" type="button" aria-pressed="false"><span class="mode-icon">⌁</span><span><b>Edit route</b><small>Tap stations to connect</small></span></button></div>
             </div>
             <div class="canvas-wrap">
+              <div class="map-navigation" aria-label="Map zoom controls"><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-out" type="button" aria-label="Zoom out">−</button><button id="zoom-reset" type="button" aria-label="Fit whole city">Fit</button></div>
               <canvas id="game-canvas" aria-label="Interactive city map. Select a line, then click stations to connect them."></canvas>
               <div id="start-hint" class="map-hint">
                 <span class="hint-number">01</span>
@@ -240,7 +190,7 @@
 
             <div class="map-footer">
               <div class="map-legend"><span><i class="legend-station"></i> Station</span><span><i class="legend-train"></i> Metro line</span><span><i class="legend-passenger"></i> Waiting queue</span></div>
-              <div id="map-status" class="map-status">SELECT A LINE · CONNECT TWO STATIONS</div>
+              <div id="map-status" class="map-status" role="status" aria-live="polite">SELECT A LINE · CONNECT TWO STATIONS</div>
             </div>
           </section>
 
@@ -299,18 +249,7 @@
             <div class="event-row"><span class="event-icon">◷</span><div><b id="event-title">Morning commute</b><small id="event-copy">The city is starting its day.</small></div><span class="event-state">ACTIVE</span></div>
           </section>
 
-          <section class="control-card">
-            <div class="panel-head"><span class="eyebrow">SIMULATION CONTROL</span><span class="clock-icon">◷</span></div>
-            <div class="playback-row">
-              <button id="pause-button" class="pause-button" type="button"><span>Ⅱ</span> Pause</button>
-              <div class="speed-control" aria-label="Simulation speed">
-                <button data-speed="1" class="speed-button active" type="button">1×</button>
-                <button data-speed="2" class="speed-button" type="button">2×</button>
-                <button data-speed="3" class="speed-button" type="button">3×</button>
-              </div>
-            </div>
-            <p class="control-footnote">The city keeps moving while you plan. Pause to rethink a busy network.</p>
-          </section>
+
 
           <section class="station-card">
             <div class="panel-head"><span class="eyebrow">STATION INSPECTOR</span><span class="station-inspector-mark">⌖</span></div>
@@ -323,13 +262,14 @@
               <div><span>CONNECTED LINES</span><strong id="station-lines">—</strong></div>
             </div>
             <div class="station-pressure-row"><span>LOCAL PRESSURE</span><strong id="station-pressure">AWAITING SELECTION</strong></div>
+            <div class="station-access"><label for="station-access">Choose a station</label><select id="station-access"></select><button id="station-connect" type="button">Select on current line</button></div>
             <p id="station-advice">Click any station on the map to inspect its passenger queue, serving lines, and local demand.</p>
             <p id="tip-text" class="station-event-note">Tip: one well-connected interchange can be more useful than three isolated lines.</p>
           </section>
-          <footer class="side-footer"><span>CITYFLOW <b>0.17.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
+          <footer class="side-footer"><span>CITYFLOW <b>0.18.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
         </aside>
       </main>
-      <div class="bottom-credit"><span>AN ORIGINAL TRANSIT STRATEGY PROTOTYPE</span><span>PORT AZURE · BUILD 0.17.0</span></div>
+      <div class="bottom-credit"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.18.0</span></div>
     </div>
     <script type="module" src="./src/boot.ts"></script>
   </body>

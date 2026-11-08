@@ -1,3 +1,5 @@
+import { MapViewport } from './mapViewport';
+import { createCityStations, CITY_STATIONS } from './cityMap';
 import { FixedStepClock } from './simulation/fixedStepClock';
 import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
@@ -11,24 +13,22 @@ const WORLD_H = 760;
 const COLORS = ['#e47762', '#5d92bd', '#6a9c81', '#d5a14e'];
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
 const ctx = canvas.getContext('2d')!;
+const viewport = new MapViewport();
+let currentDpr = 0;
+function resizeMap(): void {
+  const rect = canvas.getBoundingClientRect();
+  viewport.width = rect.width;
+  viewport.height = rect.height;
+  currentDpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(1, Math.round(rect.width * currentDpr));
+  canvas.height = Math.max(1, Math.round(rect.height * currentDpr));
+  compactMapLayout = rect.width < 620 && viewport.zoom < 1.5;
+}
+new ResizeObserver(resizeMap).observe(canvas);
+
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 
-const stations: Station[] = [
-  { id: 'harbor', name: 'Old Harbor', x: 145, y: 355, kind: 'commerce', queue: [], overload: 0 },
-  { id: 'gardens', name: 'West Gardens', x: 250, y: 205, kind: 'leisure', queue: [], overload: 0 },
-  { id: 'north', name: 'North Quarter', x: 420, y: 130, kind: 'residential', queue: [], overload: 0 },
-  { id: 'museum', name: 'Museum Mile', x: 530, y: 285, kind: 'culture', queue: [], overload: 0 },
-  { id: 'market', name: 'Central Market', x: 390, y: 440, kind: 'commerce', queue: [], overload: 0 },
-  { id: 'civic', name: 'Civic Square', x: 650, y: 445, kind: 'civic', queue: [], overload: 0 },
-  { id: 'east', name: 'Eastbank', x: 865, y: 350, kind: 'residential', queue: [], overload: 0 },
-  { id: 'university', name: 'University', x: 780, y: 175, kind: 'culture', queue: [], overload: 0 },
-  { id: 'stadium', name: 'Grand Stadium', x: 1040, y: 235, kind: 'leisure', queue: [], overload: 0 },
-  { id: 'heights', name: 'Hillview', x: 1035, y: 510, kind: 'residential', queue: [], overload: 0 },
-  { id: 'clinic', name: 'Riverside Clinic', x: 850, y: 610, kind: 'civic', queue: [], overload: 0 },
-  { id: 'south', name: 'South Pier', x: 540, y: 620, kind: 'commerce', queue: [], overload: 0 },
-  { id: 'orchard', name: 'Orchard Lane', x: 270, y: 590, kind: 'residential', queue: [], overload: 0 },
-  { id: 'airport', name: 'Airfield', x: 1090, y: 100, kind: 'commerce', queue: [], overload: 0 },
-];
+const stations = createCityStations();
 
 const lines: MetroLine[] = COLORS.map((color, index) => ({
   id: index, name: `Line ${index + 1}`, color, stations: [], trains: [], fleetSize: 1,
@@ -456,7 +456,7 @@ function drawStation(station: Station): void {
   }
 
   // Small screens keep the network uncluttered; the selected station name appears on focus.
-  if (compactMapLayout && !focused && !hovered && !selected) {
+  if (compactMapLayout && !focused && !hovered) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     return;
@@ -464,11 +464,14 @@ function drawStation(station: Station): void {
 
   // Each station has a deliberate label anchor to stop names colliding with nearby nodes.
   const label = STATION_LABEL_LAYOUT[station.id] ?? { dx: 18, dy: -16, anchor: 'left' as const };
-  const labelFontSize = compactMapLayout ? 30 : 12;
+  const labelFontSize = compactMapLayout ? 20 : 14;
   ctx.font = `700 ${labelFontSize}px Inter, "Segoe UI", sans-serif`;
   ctx.textAlign = label.anchor;
   ctx.textBaseline = 'middle';
-  const labelX = station.x + label.dx;
+  const rawX = station.x + label.dx;
+  const margin = ctx.measureText(station.name).width;
+  const labelX = Math.max(label.anchor === 'right' ? margin + 12 : label.anchor === 'center' ? margin / 2 + 12 : 12,
+    Math.min(WORLD_W - (label.anchor === 'left' ? margin + 12 : label.anchor === 'center' ? margin / 2 + 12 : 12), rawX));
   const labelY = station.y + label.dy;
   const labelWidth = ctx.measureText(station.name).width;
   const showQueueCount = station.queue.length >= 4;
@@ -566,19 +569,24 @@ function drawTrain(line: MetroLine, train: Train): void {
 }
 
 function render(): void {
-  const rect = canvas.getBoundingClientRect();
-  compactMapLayout = rect.width < 620;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const width = Math.max(1, Math.round(rect.width * dpr));
-  const height = Math.max(1, Math.round(rect.height * dpr));
-  if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
-  }
-  ctx.setTransform(width / WORLD_W, 0, 0, height / WORLD_H, 0, 0);
+  if (currentDpr !== Math.min(window.devicePixelRatio || 1, 2)) resizeMap();
+  const dpr = currentDpr;
+  compactMapLayout = viewport.width < 620 && viewport.zoom < 1.5;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = '#dce7e4';
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
+  const scale = viewport.scale;
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale,
+    dpr * (viewport.width / 2 - viewport.x * scale), dpr * (viewport.height / 2 - viewport.y * scale));
   drawBackground();
   drawCityOverlay(ctx, elapsed);
   for (const line of lines) drawLine(line);
+  const endpoint = lines[selectedLine]?.stations.at(-1);
+  if (routeEditMode && hoveredStation && endpoint && endpoint !== hoveredStation.id) {
+    const from = stationById(endpoint);
+    ctx.save(); ctx.setLineDash([8, 8]); ctx.strokeStyle = lines[selectedLine]!.color; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(hoveredStation.x, hoveredStation.y); ctx.stroke(); ctx.restore();
+  }
   for (const station of stations) drawStation(station);
   for (const line of lines) {
     for (const train of line.trains) drawTrain(line, train);
@@ -721,6 +729,9 @@ function updateHUD(): void {
   $('#flow-note').textContent = !connected ? 'Connect stations to begin moving passengers.' : `${queueTotal} passengers are waiting across the network.`;
   $('#capacity-state').textContent = `Train capacity ×${capacityLevel}`;
   $('#express-state').textContent = `Train speed ×${expressLevel}`;
+  $<HTMLButtonElement>('#capacity-button').disabled = gameOver || capacityLevel >= 3 || credits < capacityCost();
+  $<HTMLButtonElement>('#speed-button').disabled = gameOver || expressLevel >= 3 || credits < expressCost();
+  $<HTMLButtonElement>('#dispatch-button').disabled = gameOver || !selectedFleet || selectedFleet.stations.length < 2 || selectedFleet.fleetSize >= 3 || credits < dispatchCost(selectedFleet);
   $('#capacity-button').classList.toggle('maxed', capacityLevel >= 3 || credits < capacityCost());
   $('#speed-button').classList.toggle('maxed', expressLevel >= 3 || credits < expressCost());
   $('#dispatch-button').classList.toggle('maxed', !selectedFleet || selectedFleet.stations.length < 2 || selectedFleet.fleetSize >= 3 || credits < dispatchCost(selectedFleet));
@@ -735,7 +746,8 @@ function updateHUD(): void {
     const line = lines[Number(button.dataset.line)];
     button.classList.toggle('has-route', (line?.stations.length ?? 0) >= 2);
     const count = button.querySelector('span');
-    if (count && line) count.textContent = String(line.stations.length).padStart(2, '0');
+    if (line) button.setAttribute('aria-label', `${line.name}, ${line.stations.length} stations`);
+    if (count && line) count.textContent = `${String(line.id + 1).padStart(2, '0')} · ${line.stations.length}`;
   });
 }
 
@@ -784,6 +796,7 @@ function updateStationInspector(): void {
 
 function selectLine(index: number): void {
   selectedLine = index;
+  document.querySelectorAll<HTMLButtonElement>('[data-line]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.line) === index)));
   updateHUD();
   updateStartHint();
   const line = lines[selectedLine];
@@ -931,6 +944,7 @@ function restartGame(): void {
   elapsed = 0;
   demandClock = 0;
   simulationClock.reset();
+  viewport.reset();
   score = 0;
   credits = 28;
   stadiumArrivalsDelivered = 0;
@@ -977,27 +991,58 @@ function gameLoop(timestamp: number): void {
 
 function pointerPosition(event: PointerEvent): { x: number; y: number } {
   const rect = canvas.getBoundingClientRect();
-  return {
-    x: ((event.clientX - rect.left) / rect.width) * WORLD_W,
-    y: ((event.clientY - rect.top) / rect.height) * WORLD_H,
-  };
+  return viewport.world({ x: event.clientX - rect.left, y: event.clientY - rect.top });
 }
-
 function findStationAt(x: number, y: number): Station | null {
-  const hitRadius = canvas.clientWidth < 620 ? 52 : 24;
-  return stations.find((station) => Math.hypot(station.x - x, station.y - y) < hitRadius) ?? null;
+  const radius = Math.max(20, 22 / viewport.scale);
+  return [...stations].sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))
+    .find(station => Math.hypot(station.x - x, station.y - y) <= radius) ?? null;
 }
-
-canvas.addEventListener('pointermove', (event) => {
+let drag: { id: number; x: number; y: number; startX: number; startY: number; moved: boolean } | null = null;
+canvas.addEventListener('pointerdown', event => {
+  if (!gameStarted || gameOver || drag || event.button !== 0) return;
+  canvas.setPointerCapture(event.pointerId);
+  drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: false };
+});
+canvas.addEventListener('pointermove', event => {
+  if (drag && event.pointerId === drag.id) {
+    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 6) drag.moved = true;
+    if (drag.moved) viewport.pan(event.clientX - drag.x, event.clientY - drag.y);
+    drag.x = event.clientX; drag.y = event.clientY;
+  }
   const point = pointerPosition(event);
   hoveredStation = findStationAt(point.x, point.y);
-  canvas.style.cursor = hoveredStation ? 'pointer' : 'crosshair';
+  canvas.style.cursor = drag?.moved ? 'grabbing' : hoveredStation ? 'pointer' : viewport.zoom > 1 ? 'grab' : 'crosshair';
 });
+canvas.addEventListener('pointerup', event => {
+  if (!drag || drag.id !== event.pointerId) return;
+  if (!drag.moved) {
+    const point = pointerPosition(event);
+    const station = findStationAt(point.x, point.y);
+    if (station) addStationToSelectedLine(station);
+    else $('#map-status').textContent = 'SELECT A STATION MARKER · DRAG TO PAN WHEN ZOOMED';
+  }
+  drag = null;
+});
+canvas.addEventListener('pointercancel', () => { drag = null; });
+canvas.addEventListener('lostpointercapture', () => { drag = null; });
 canvas.addEventListener('pointerleave', () => { hoveredStation = null; });
-canvas.addEventListener('pointerdown', (event) => {
-  const point = pointerPosition(event);
-  const station = findStationAt(point.x, point.y);
-  if (station) addStationToSelectedLine(station);
+canvas.addEventListener('wheel', event => {
+  if (!event.ctrlKey && !event.metaKey) return;
+  event.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  viewport.zoomAt(event.deltaY < 0 ? 1.15 : 1 / 1.15, { x: event.clientX - rect.left, y: event.clientY - rect.top });
+}, { passive: false });
+$('#zoom-in').addEventListener('click', () => viewport.zoomAt(1.3));
+$('#zoom-out').addEventListener('click', () => viewport.zoomAt(1 / 1.3));
+$('#zoom-reset').addEventListener('click', () => viewport.reset());
+$('#station-access').addEventListener('change', () => {
+  const id = $<HTMLSelectElement>('#station-access').value;
+  focusedStation = stations.find(station => station.id === id) ?? null;
+  updateStationInspector();
+});
+$('#station-connect').addEventListener('click', () => {
+  if (focusedStation) addStationToSelectedLine(focusedStation);
 });
 
 $('#map-mode-button').addEventListener('click', () => {
@@ -1071,6 +1116,22 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') $('#help-popover').classList.add('hidden');
 });
 
+const overview = $<HTMLCanvasElement>('#menu-city-map');
+const overviewContext = overview.getContext('2d')!;
+overview.width = WORLD_W; overview.height = WORLD_H;
+drawCityOverlay(overviewContext, 0);
+overviewContext.lineWidth = 9; overviewContext.lineCap = 'round'; overviewContext.strokeStyle = COLORS[0]!;
+overviewContext.beginPath();
+['harbor', 'gardens', 'north', 'museum', 'market'].forEach((id, index) => {
+  const station = stationById(id);
+  if (index === 0) overviewContext.moveTo(station.x, station.y); else overviewContext.lineTo(station.x, station.y);
+});
+overviewContext.stroke();
+for (const station of CITY_STATIONS) {
+  overviewContext.beginPath(); overviewContext.arc(station.x, station.y, 10, 0, Math.PI * 2);
+  overviewContext.fillStyle = '#fffef7'; overviewContext.fill(); overviewContext.strokeStyle = '#284e53'; overviewContext.lineWidth = 3; overviewContext.stroke();
+}
+$<HTMLSelectElement>('#station-access').innerHTML = '<option value="">Choose a station…</option>' + stations.map(station => `<option value="${station.id}">${station.name}</option>`).join('');
 selectLine(0);
 updateStartHint();
 updateHUD();

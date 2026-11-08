@@ -197,3 +197,7 @@ Spotify should be treated as an optional external listening destination, not a r
 - The loading screen stays until startup reports ready, and startup errors offer a retry.
 - The Spotify shortcut is optional and never blocks the game from starting.
 - No third-party proprietary game assets are used.
+
+## v0.18 — Network control presentation
+
+The map is the primary workspace, with line selection above it and playback next to the city title. The warmer paper map contrasts with a navy operations desk. Larger typography and touch controls replace tiny decorative labels. Zoom/pan and a keyboard station selector preserve access to all fourteen stations at small widths. Preview routes show the next hovered connection before editing.

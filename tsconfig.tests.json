@@ -10,5 +10,15 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["src/simulation/pathfinding.ts", "src/simulation/trainMotion.ts", "src/simulation/passengerDemand.ts", "src/simulation/shiftPhases.ts", "src/simulation/passengerOperations.ts", "src/simulation/fixedStepClock.ts", "src/simulation/gameTypes.ts", "src/simulation/gameSimulation.ts"]
+  "include": [
+    "src/simulation/pathfinding.ts",
+    "src/simulation/trainMotion.ts",
+    "src/simulation/passengerDemand.ts",
+    "src/simulation/shiftPhases.ts",
+    "src/simulation/passengerOperations.ts",
+    "src/simulation/fixedStepClock.ts",
+    "src/simulation/gameTypes.ts",
+    "src/simulation/gameSimulation.ts",
+    "src/mapViewport.ts"
+  ]
 }

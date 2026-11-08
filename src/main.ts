@@ -4,7 +4,7 @@ import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
 import { nextStopIndex } from './simulation/trainMotion';
 import { GameSimulation, type GameSimulationState } from './simulation/gameSimulation';
-import type { MetroLine, Passenger, Station, StationKind, Train } from './simulation/gameTypes';
+import type { MetroLine, Station, StationKind, Train } from './simulation/gameTypes';
 import { getShiftPhase, getShiftPhaseIndex, SHIFT_PHASES } from './simulation/shiftPhases';
 
 const WORLD_W = 1200;

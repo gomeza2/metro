@@ -18,3 +18,5 @@ Use the existing checkout; do not create a worktree unless requested. Node >=20 
 - Route drafts must not mutate live routes, fleets or planners until Apply. Apply and Discard both retain pause, including after resuming from the menu.
 - Operating incidents are optional except in rush mode; keep separate best-score keys and preserve the user's non-rush preference.
 - Run history is optional, validated local data, limited to eight summaries; storage failures must not block gameplay.
+
+- Fleet reassignment preserves total fleet, a base train per line, all passengers and unaffected train positions. Validate funds before mutation; live telemetry must use actual train policies, not UI previews.

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="cityflow-version" content="0.23.0" />
+    <meta name="cityflow-version" content="0.24.0" />
     <meta name="theme-color" content="#0b1716" />
     <meta name="description" content="CITYFLOW: estrategia de transporte para construir, observar y pensar con calma." />
     <title>CITYFLOW — Estrategia de transporte urbano</title>
@@ -143,7 +143,7 @@
               <article><span>05 · 15:30+</span><b>Regreso de la tarde</b><small>Equilibra una ciudad que ya está en movimiento.</small></article>
             </div>
           </section>
-          <footer class="menu-footer"><span>UN JUEGO ORIGINAL DE ESTRATEGIA DE TRANSPORTE</span><span>PORT AZURE · VERSIÓN 0.23.0</span></footer>
+          <footer class="menu-footer"><span>UN JUEGO ORIGINAL DE ESTRATEGIA DE TRANSPORTE</span><span>PORT AZURE · VERSIÓN 0.24.0</span></footer>
         </div>
       </section>
 
@@ -244,7 +244,10 @@
             </div>
           </section>
 
-          <details id="line-operations" class="line-operations" open><summary><span id="line-operations-title">Planificación de línea</span><small>Servicio y frecuencia</small></summary><div class="operations-content"><label for="line-policy">Política de operación</label><div class="policy-actions"><select id="line-policy"><option value="balanced">Equilibrada</option><option value="local">Servicio local · más asientos</option><option value="rapid">Servicio rápido · menos asientos</option></select><button id="apply-policy" type="button">Servicio actual</button></div><p id="policy-description"></p><dl class="service-metrics"><div><dt>Asientos</dt><dd id="policy-seats"></dd></div><div><dt>Ida y vuelta estimada</dt><dd id="policy-cycle"></dd></div><div><dt>Intervalo medio estimado</dt><dd id="policy-headway"></dd></div></dl><p class="service-note">Cambiar cuesta $6 con la línea activa; antes es gratis. Se aplica en la próxima parada. Los intervalos son estimaciones.</p><div id="line-route" class="line-route" aria-label="Recorrido: toca una estación para inspeccionarla"></div></div></details>
+          <details id="line-operations" class="line-operations" open><summary><span id="line-operations-title">Planificación de línea</span><small>Servicio y frecuencia</small></summary><div class="operations-content"><label for="line-policy">Política de operación</label><div class="policy-actions"><select id="line-policy"><option value="balanced">Equilibrada</option><option value="local">Servicio local · más asientos</option><option value="rapid">Servicio rápido · menos asientos</option></select><button id="apply-policy" type="button">Servicio actual</button></div><p id="policy-description"></p><dl class="service-metrics"><div><dt>Asientos</dt><dd id="policy-seats"></dd></div><div><dt>Ida y vuelta estimada</dt><dd id="policy-cycle"></dd></div><div><dt>Intervalo medio estimado</dt><dd id="policy-headway"></dd></div></dl><p class="service-note">Cambiar cuesta $6 con la línea activa; antes es gratis. Se aplica en la próxima parada. Los intervalos son estimaciones.</p><div id="line-route" class="line-route" aria-label="Recorrido: toca una estación para inspeccionarla"></div>
+            <section class="line-observation" aria-label="Estado real de la línea"><h3>Lo que pasa ahora</h3><dl class="service-metrics"><div><dt>Personas a bordo / asientos</dt><dd id="line-load"></dd></div><div><dt>En sus estaciones</dt><dd id="line-waiting"></dd></div><div><dt>Sin camino al destino</dt><dd id="line-disconnected"></dd></div></dl><p class="service-note">Datos de la ruta actual. Las estaciones compartidas cuentan en cada línea; una cola no significa que todos esperen este servicio.</p><button id="line-priority" type="button" hidden></button></section>
+            <details class="fleet-transfer"><summary>Reasignar un tren adicional</summary><p>Mueve un refuerzo desde otra línea por $4. Cada línea conserva su tren base. Se traslada el tren menos ocupado; sus pasajeros vuelven a su última estación para esperar otro servicio.</p><label for="transfer-source">Línea de origen → línea seleccionada</label><div class="policy-actions"><select id="transfer-source" aria-describedby="transfer-preview"></select><button id="transfer-train" type="button">Reasignar · $4</button></div><p id="transfer-preview" class="service-note"></p><small>La operación mantiene el turno en pausa. No cambia los recorridos ni mueve los otros trenes.</small></details>
+</div></details>
           <section class="upgrade-strip">
             <div class="upgrade-title"><span class="eyebrow">INVIERTE SEGÚN EL PROBLEMA</span><span class="coming-label">MEJORAS CON FONDOS</span></div>
             <button id="capacity-button" class="upgrade-card" type="button">
@@ -303,7 +306,7 @@
             <div class="panel-head"><span class="eyebrow">DETALLE DE LA ESTACIÓN</span><span class="station-inspector-mark">⌖</span></div>
             <div class="station-detail-head">
               <span id="station-icon" class="station-detail-icon">⌖</span>
-              <div><strong id="station-name">Elige una estación</strong><small id="station-kind">Información de la estación</small></div>
+              <div><strong id="station-name" tabindex="-1">Elige una estación</strong><small id="station-kind">Información de la estación</small></div>
             </div>
             <div class="station-detail-grid">
               <div><span>COLA DE ESPERA</span><strong id="station-queue">—</strong></div>
@@ -316,11 +319,11 @@
             <p id="station-advice">Selecciona una estación para ver su cola, sus conexiones y los destinos de sus pasajeros.</p>
             <p id="tip-text" class="station-event-note">Consejo: un buen transbordo puede ser más útil que tres líneas aisladas.</p>
           </section>
-          <footer class="side-footer"><span>CITYFLOW <b>0.23.0</b></span><span>CONSTRUYE · OBSERVA · PIENSA</span></footer>
+          <footer class="side-footer"><span>CITYFLOW <b>0.24.0</b></span><span>CONSTRUYE · OBSERVA · PIENSA</span></footer>
         </aside>
       </main>
       <button id="quick-pause" class="mobile-playback" type="button" hidden aria-pressed="false">Pausa para pensar</button>
-      <div class="bottom-credit"><span>UN JUEGO ORIGINAL DE ESTRATEGIA DE TRANSPORTE</span><span>PORT AZURE · VERSIÓN 0.23.0</span></div>
+      <div class="bottom-credit"><span>UN JUEGO ORIGINAL DE ESTRATEGIA DE TRANSPORTE</span><span>PORT AZURE · VERSIÓN 0.24.0</span></div>
     </div>
     <script type="module" src="./boot.ts"></script>
   </body>

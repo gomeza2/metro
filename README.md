@@ -2,14 +2,24 @@
 
 Un juego original de estrategia de transporte urbano: construye líneas, conecta barrios y adapta el servicio a la demanda de Port Azure.
 
-## Versión actual — 0.23.0 · Planificar, anticipar y aprender
+## Versión actual — 0.24.0 · Refuerza donde hace falta
+
+La planificación de línea incorpora **reasignación de flota**: mueve un tren adicional desde otra línea por **$4**, en lugar de comprar otro. Cada línea conserva un tren base y el destino necesita una ruta de al menos dos estaciones y espacio dentro del máximo de tres trenes. Se retira el tren menos ocupado; antes de confirmar ves cuántos pasajeros volverán a su última estación. Allí esperan y recalculan su camino; no se eliminan. Los demás trenes mantienen posición y pasajeros. La operación deja el turno en pausa.
+
+También puedes recuperar un refuerzo de una línea cuyo recorrido vaciaste. El panel muestra el cambio de flota de origen y destino. No se permiten traslados mientras haya un borrador de ruta abierto.
+
+**Lo que pasa ahora** muestra ocupación/asientos reales de la flota, personas esperando en sus estaciones y viajeros sin camino al destino. Estos datos corresponden a la red actual, aunque estés previsualizando otra ruta o política. Una estación compartida cuenta en cada línea; su cola puede esperar diferentes servicios. Un botón abre la estación con mayor presión para inspeccionarla sin cambiar el recorrido, también desde móvil.
+
+Jugar: https://gomeza2.github.io/metro/ · [Validación de esta versión](docs/QA_0.24.md)
+
+## Planificar, anticipar y aprender
 
 - **Planificar:** el botón de lápiz detiene el tiempo y permite ensayar una ruta discontinua. Compara la mayor red conectada y cuántas personas quedarían sin camino. Aplicar cambia la ruta una sola vez; Descartar o Escape conserva la original. Ambas acciones mantienen la pausa. La edición directa sigue disponible.
 - **Incidencias anunciadas:** opcionales desde el menú, activadas siempre en Hora pico. Una señal lenta se anuncia con 15 segundos de anticipación, dura 30 y reduce al 65% la velocidad de los tramos que tocan la estación indicada. Puedes reforzar o desviar el servicio. La primera comienza a los 100 segundos de simulación y se repite cada 120; pausar también detiene estos plazos. Urbano y tranquilo empiezan sin incidencias; sus récords se separan cuando las activas.
 - **Controles móviles:** aviso junto al mapa que abre los detalles del incidente y botón flotante para pausar o continuar desde cualquier panel.
 - **Últimos turnos:** el menú guarda hasta ocho resultados en este navegador, con viajes, duración de simulación, contratos y motivo de finalización. Incluye turnos interrumpidos al elegir otro modo. Es un resumen local; la partida en curso todavía no se guarda.
 
-Jugar: https://gomeza2.github.io/metro/ · [Validación de esta versión](docs/QA_0.23.md)
+Jugar: https://gomeza2.github.io/metro/ · [Validación de la etapa de planificación](docs/QA_0.23.md)
 
 ## Una ciudad que crece contigo
 

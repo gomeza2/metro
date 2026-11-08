@@ -1,3 +1,4 @@
+import { lineTelemetry } from './simulation/lineTelemetry';
 import { RouteDraft, routeImpact } from './simulation/routeDraft';
 import { incidentAt, approachingIncident } from './simulation/operatingIncidents';
 import { HISTORY_KEY, parseRunHistory, appendRun, type RunOutcome, type RunRecord } from './runHistory';
@@ -13,7 +14,7 @@ import { MapViewport } from './mapViewport';
 import { createCityStations, CITY_STATIONS } from './cityMap';
 import { FixedStepClock } from './simulation/fixedStepClock';
 import { drawCityOverlay } from './visuals';
-import { NetworkCommands, dispatchCost } from './simulation/networkCommands';
+import { NetworkCommands, REASSIGNMENT_COST, dispatchCost } from './simulation/networkCommands';
 import { nextStopIndex } from './simulation/trainMotion';
 import { GameSimulation } from './simulation/gameSimulation';
 import type { MetroLine, Station, StationKind, Train } from './simulation/gameTypes';
@@ -1238,6 +1239,8 @@ $('#apply-policy').addEventListener('click', () => {
 let routeMarkupKey = '';
 function updateLineOperations(): void {
   const line = lines[selectedLine]!;
+  updateLineTelemetry(line);
+  updateFleetTransfer();
   const policy = policyPreview ?? line.policy ?? 'balanced';
   const cost = line.stations.length >= 2 ? POLICY_CHANGE_COST : 0;
   $('#line-operations-title').textContent = `${line.name} · planificación del servicio`;
@@ -1259,9 +1262,70 @@ function updateLineOperations(): void {
     routeMarkupKey = key;
   }
 }
+function inspectFromOperations(id: string): void {
+  focusedStation = stationById(id);
+  tutorialInspected = true;
+  $('.side-panel').dataset.mobilePanel = 'station';
+  document.querySelectorAll<HTMLButtonElement>('[data-panel]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.panel === 'station')));
+  updateStationInspector();
+  $('#station-name').scrollIntoView({ block: 'center' });
+  $('#station-name').focus();
+}
+function updateLineTelemetry(line: MetroLine): void {
+  const telemetry = lineTelemetry(line, stations, economy.capacityLevel);
+  $('#line-load').textContent = `${telemetry.onboard} / ${telemetry.seats}`;
+  $('#line-waiting').textContent = String(telemetry.waiting);
+  $('#line-disconnected').textContent = String(telemetry.disconnected);
+  const button = $('#line-priority');
+  button.hidden = !telemetry.priority;
+  button.dataset.station = telemetry.priority?.id ?? '';
+  button.textContent = telemetry.priority ? `Inspeccionar ${telemetry.priority.name} · ${telemetry.priority.queue.length} esperando` : '';
+}
+let transferOptionsKey = '';
+function updateFleetTransfer(): void {
+  const select = $<HTMLSelectElement>('#transfer-source');
+  const sources = lines.filter(line => line.id !== selectedLine && line.fleetSize > 1);
+  const key = `${selectedLine}:${sources.map(line => `${line.id}-${line.fleetSize}`).join(',')}`;
+  if (key !== transferOptionsKey) {
+    const previous = select.value;
+    select.replaceChildren();
+    for (const source of sources) {
+      const option = document.createElement('option');
+      option.value = String(source.id);
+      option.textContent = `${source.name} · ${source.fleetSize} → ${source.fleetSize - 1} trenes`;
+      select.append(option);
+    }
+    if (!sources.length) { const option = document.createElement('option'); option.value = ''; option.textContent = 'No hay refuerzos disponibles'; select.append(option); }
+    if (sources.some(line => String(line.id) === previous)) select.value = previous;
+    transferOptionsKey = key;
+  }
+  select.disabled = !sources.length || !!routeDraft || gameOver || !gameStarted;
+  const preview = select.value === '' ? null : network.reassignmentPreview(Number(select.value), selectedLine);
+  const available = !!preview && gameStarted && !gameOver && !routeDraft && simulationState.credits >= REASSIGNMENT_COST;
+  $<HTMLButtonElement>('#transfer-train').disabled = !available;
+  $('#transfer-preview').textContent = routeDraft ? 'Aplica o descarta el borrador antes de reasignar trenes.'
+    : lines[selectedLine]!.stations.length < 2 ? 'Conecta dos estaciones en la línea de destino.'
+    : lines[selectedLine]!.fleetSize >= 3 ? 'Esta línea ya tiene el máximo de tres trenes.'
+    : !sources.length ? 'Compra un tren adicional en otra línea para poder trasladarlo. No se retiran los trenes base.'
+    : !preview ? 'No hay un traslado disponible entre estas líneas.'
+    : `Destino: ${lines[selectedLine]!.fleetSize} → ${lines[selectedLine]!.fleetSize + 1} trenes. ${preview.passengers} personas volverán a ${preview.stationId ? stationById(preview.stationId).name : 'la estación de origen'} para esperar.${simulationState.credits < REASSIGNMENT_COST ? ' Necesitas $4.' : ' Coste: $4.'}`;
+}
+$('#transfer-source').addEventListener('change', updateFleetTransfer);
+$('#transfer-train').addEventListener('click', () => {
+  const source = $<HTMLSelectElement>('#transfer-source').value;
+  if (!gameStarted || gameOver || routeDraft || source === '') return;
+  if (!network.reassign(Number(source), selectedLine, simulationState)) { updateHUD(); return; }
+  paused = true; tutorialPaused = true;
+  $('#map-status').textContent = `Refuerzo reasignado a ${lines[selectedLine]!.name} · −$4 · Continúas en pausa.`;
+  updateHUD();
+});
+$('#line-priority').addEventListener('click', () => {
+  const id = $('#line-priority').dataset.station;
+  if (id) inspectFromOperations(id);
+});
 $('#line-route').addEventListener('click', event => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-inspect-station]');
-  if (button) { focusedStation = stationById(button.dataset.inspectStation!); tutorialInspected = true; updateStationInspector(); }
+  if (button) inspectFromOperations(button.dataset.inspectStation!);
 });
 window.addEventListener('keydown', event => {
   if (!gameStarted || gameOver || event.repeat || event.ctrlKey || event.metaKey || event.altKey || ['INPUT','TEXTAREA','SELECT'].includes((event.target as HTMLElement).tagName)) return;

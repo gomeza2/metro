@@ -31,6 +31,7 @@
     "src/simulation/cityGrowth.ts",
     "src/simulation/routeDraft.ts",
     "src/simulation/operatingIncidents.ts",
-    "src/runHistory.ts"
+    "src/runHistory.ts",
+    "src/simulation/lineTelemetry.ts"
   ]
 }

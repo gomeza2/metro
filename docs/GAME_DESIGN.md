@@ -313,3 +313,20 @@ El historial ayuda a comparar modos y resultados sin progreso obligatorio. Las i
 - [ ] Extraer el renderizador dinámico y medir rendimiento/memoria en teléfonos reales.
 - [ ] Nuevos escenarios con objetivos propios, después de validar los actuales.
 - [ ] Guardado reanudable, campaña, ciudades y desbloqueos permanentes siguen pendientes.
+
+
+## v0.24 — redistribuir recursos en vez de acumularlos
+
+Una incidencia o el regreso del estadio puede hacer más útil un refuerzo en otra línea. Reasignarlo cuesta $4 y reduce la frecuencia de origen mientras mejora la del destino; no aumenta la flota total. El tren menos ocupado devuelve a sus pasajeros a su última parada y se coloca vacío en destino. El aviso previo permite evaluar esa interrupción. La pausa posterior ayuda a revisar el resultado antes de continuar. La línea conserva una unidad base y puede recuperar reservas de una ruta vaciada.
+
+La lectura de línea separa estimaciones de ciclo/frecuencia y observaciones reales de carga/colas. La estación prioritaria ofrece un punto de inspección, no una orden de construcción ni una solución garantizada. Las cifras de estaciones compartidas se identifican para no confundir demanda local con demanda exclusiva de una línea.
+
+### Avance de fases y próximos límites
+
+- [x] Fases de estabilidad/interacción: se conserva acceso directo, crecimiento, tutorial y borradores.
+- [x] Jugabilidad/economía: reasignación de refuerzos sin perder pasajeros ni reiniciar la red.
+- [x] Controles: inspección accesible desde recorrido y estación prioritaria, también en móvil.
+- [x] Arquitectura: lectura de línea aislada y escenario de conservación con traslados sucesivos.
+- [ ] Equilibrio con jugadores: coste de reasignación frente a compras por línea y políticas.
+- [ ] Separación del renderizador y medición en dispositivos reales.
+- [ ] Nuevos escenarios, guardado reanudable y campaña continúan pendientes.

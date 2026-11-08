@@ -2,6 +2,7 @@ import { OPERATING_POLICIES, POLICY_CHANGE_COST, type OperatingPolicyId } from '
 import { createRoutePlanner, type RoutePlanner } from './pathfinding.js';
 import type { MetroLine, Station, Train } from './gameTypes.js';
 
+export const REASSIGNMENT_COST = 4;
 export const dispatchCost = (line: MetroLine): number => 18 + Math.max(0, line.fleetSize - 1) * 16;
 export type RouteEditResult = 'extended' | 'trimmed' | 'unchanged' | 'invalid';
 
@@ -54,12 +55,47 @@ export class NetworkCommands {
 
   dispatch(lineId: number, budget: { credits: number }): boolean {
     const line = this.lines.find(item => item.id === lineId);
-    if (!line || line.stations.length < 2 || line.fleetSize >= 3 || budget.credits < dispatchCost(line)) return false;
+    if (!line || line.stations.length < 2 || line.fleetSize >= 3 || !Number.isFinite(budget.credits) || budget.credits < dispatchCost(line)) return false;
     const cost = dispatchCost(line);
     const train = this.spacedTrain(line);
     budget.credits -= cost;
     line.trains.push(train);
     line.fleetSize += 1;
+    return true;
+  }
+
+  /** The least occupied extra train returns riders to its last actual stop. */
+  reassignmentPreview(fromId: number, toId: number): { trainId: number | null; passengers: number; stationId: string | null } | null {
+    const source = this.lines.find(line => line.id === fromId);
+    const target = this.lines.find(line => line.id === toId);
+    if (!source || !target || source === target || source.fleetSize <= 1 || target.fleetSize >= 3 || target.stations.length < 2) return null;
+    if (target.stations.some(id => !this.stationById.has(id) || this.stationById.get(id)?.active === false)) return null;
+    const train = source.trains.reduce<Train | null>((best, item) => !best || item.passengers.length < best.passengers.length ? item : best, null);
+    if (train && !this.stationById.has(train.lastStationId)) return null;
+    return { trainId: train?.id ?? null, passengers: train?.passengers.length ?? 0, stationId: train?.lastStationId ?? null };
+  }
+
+  reassign(fromId: number, toId: number, budget: { credits: number }): boolean {
+    const preview = this.reassignmentPreview(fromId, toId);
+    if (!preview || !Number.isFinite(budget.credits) || budget.credits < REASSIGNMENT_COST) return false;
+    const source = this.lines.find(line => line.id === fromId)!;
+    const target = this.lines.find(line => line.id === toId)!;
+    const train = source.trains.find(item => item.id === preview.trainId);
+    const replacement = this.spacedTrain(target);
+    if (train) {
+      const station = this.stationById.get(train.lastStationId)!;
+      for (const passenger of train.passengers) {
+        passenger.route = [...(this.planner.findRoute(station.id, passenger.destination) ?? [])];
+        station.queue.push(passenger);
+      }
+      train.passengers = [];
+      source.trains = source.trains.filter(item => item !== train);
+      replacement.id = train.id;
+    }
+    source.fleetSize -= 1;
+    target.fleetSize += 1;
+    target.trains.push(replacement);
+    budget.credits -= REASSIGNMENT_COST;
     return true;
   }
 

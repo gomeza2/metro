@@ -203,3 +203,14 @@ La interfaz está traducida directamente en sus fuentes, sin observadores que re
 `runHistory` valida JSON, limita entrada y resultados, rechaza modos/desenlaces/números inválidos y reconstruye solo campos conocidos. El coordinador guarda resultados una vez al terminar, o al interrumpir explícitamente un turno con tiempo transcurrido. El historial no contiene una partida reanudable; fallar localStorage no impide jugar. El DOM presenta los datos mediante textContent. Las claves de récord distinguen incidencias sin alterar las antiguas claves sin ellas.
 
 El aviso de mapa abre la pestaña móvil del turno y enfoca su título. La pausa flotante comparte el mismo comando que teclado y barra superior. El HUD se actualiza inmediatamente al pausar para congelar contadores visibles con el motor; durante el juego conserva su frecuencia limitada.
+
+
+## v0.24 — flota reasignable y observaciones de línea
+
+`NetworkCommands.reassignmentPreview` valida origen/destino y elige el tren menos ocupado sin mutar. `reassign` vuelve a validar y exige fondos finitos para el coste único de $4. La línea de origen conserva al menos una unidad de flota; el destino necesita una ruta activa y no puede superar tres unidades. Un refuerzo sin recorrido se puede recuperar desde la reserva. Los viajeros del tren retirado vuelven a su última estación registrada, con caminos actualizados mediante el planificador existente. Se conserva la identidad del tren trasladado, colocado vacío y espaciado en el destino con su política. Los otros trenes y el planificador conservan identidad y posiciones. No se reconstruye la topología ni se suman entregas.
+
+El coordinador bloquea reasignaciones durante borradores y termina una operación válida en pausa, actualizando inmediatamente todos los controles. Las opciones del selector se regeneran solo cuando cambian origen disponible, flota o destino, conservando la selección cuando sigue siendo válida. El comando de compra también rechaza presupuestos no finitos.
+
+`lineTelemetry` es una lectura sin DOM: suma pasajeros y asientos según la política capturada de cada tren, colas de estaciones activas de la ruta y pasajeros sin camino. No confunde una política previsualizada con la adoptada. La estación prioritaria se ordena por sobrecarga acumulada y luego por proporción de ocupación del andén. Devuelve referencias solo para inspeccionar; no cambia el orden de estaciones ni las colas. Los recuentos no atribuyen automáticamente todos los viajeros de una estación compartida a una línea.
+
+Inspeccionar desde recorrido o prioridad abre la pestaña de estación en móvil y mueve el foco al nombre, manteniendo el recorrido. El nuevo control de refuerzos se agrupa en un desplegable dentro del panel avanzado existente; el inicio progresivo y el tutorial conservan su composición inicial.

@@ -24,9 +24,9 @@ function train(overrides = {}) {
   };
 }
 
-function createGame({ queueA = [], passengers = [], dwell = 10, overload = 0, running = true } = {}) {
+function createGame({ queueA = [], passengers = [], dwell = 10, overload = 0, running = true, secondStationId = 'B' } = {}) {
   const a = station('A', 0, queueA);
-  const b = station('B', 10);
+  const b = station(secondStationId, 10);
   const c = station('C', 20);
   a.overload = overload;
   const vehicle = train({ dwell, passengers });
@@ -34,7 +34,7 @@ function createGame({ queueA = [], passengers = [], dwell = 10, overload = 0, ru
     id: 0,
     name: 'Line 1',
     color: '#e47762',
-    stations: ['A', 'B'],
+    stations: ['A', secondStationId],
     trains: [vehicle],
     fleetSize: 1,
   };
@@ -127,14 +127,22 @@ test('delivers passengers on arrival and updates score, funds and stadium counte
   assert.equal(game.state.credits, 30);
 });
 
-test('tracks arrivals at and departures from the stadium', () => {
-  const inbound = passenger(1, 'A', 'stadium', ['A', 'B']);
-  const outbound = passenger(2, 'stadium', 'B', ['A', 'B']);
-  const game = createGame({ passengers: [inbound, outbound], dwell: 0 });
+test('tracks passengers delivered to the stadium', () => {
+  const inbound = passenger(1, 'A', 'stadium', ['A', 'stadium']);
+  const game = createGame({ passengers: [inbound], dwell: 0, secondStationId: 'stadium' });
   game.simulation.step(0.1);
 
   assert.equal(game.state.stadiumArrivalsDelivered, 1);
-  assert.equal(game.state.stadiumDeparturesDelivered, 0);
+  assert.equal(game.state.score, 1);
+});
+
+test('tracks passengers returning from the stadium', () => {
+  const outbound = passenger(2, 'stadium', 'B', ['A', 'B']);
+  const game = createGame({ passengers: [outbound], dwell: 0 });
+  game.simulation.step(0.1);
+
+  assert.equal(game.state.stadiumDeparturesDelivered, 1);
+  assert.equal(game.state.score, 1);
 });
 
 test('signals an overload once the queue stays above its limit long enough', () => {

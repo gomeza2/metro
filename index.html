@@ -3,9 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="cityflow-version" content="0.17.0" />
     <meta name="theme-color" content="#0b1716" />
     <meta name="description" content="CITYFLOW — a calm, challenging urban transit strategy game." />
     <title>CITYFLOW — Urban Transit Strategy</title>
+    <style>/* Keep recovery usable even when the external stylesheet fails. */
+      #loading-screen { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; background:#101e26; color:#f4f2e8; font:16px system-ui,sans-serif; padding:24px; }
+      #loading-screen.is-hidden { display:none; }
+      #loading-screen button { padding:12px 20px; cursor:pointer; }
+    </style>
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body class="menu-active">

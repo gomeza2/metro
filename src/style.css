@@ -1,4 +1,5 @@
 :root {
+  --cityflow-ui-ready: 1;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
   color-scheme: dark;
   font-synthesis: none;

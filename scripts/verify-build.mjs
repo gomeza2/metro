@@ -25,3 +25,7 @@ for (const [label, assetPath] of [['CSS', stylesheetPath], ['JavaScript', script
 }
 
 console.log('Build smoke check passed: relative CSS and JavaScript assets exist in dist.');
+
+const pkg = JSON.parse(await readFile(resolve(projectRoot, 'package.json'), 'utf8'));
+assert.ok(html.includes(`name="cityflow-version" content="${pkg.version}"`), 'Published HTML must identify the package version');
+assert.ok(!html.includes('./src/'), 'Production HTML must not load source assets');

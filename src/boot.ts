@@ -46,7 +46,7 @@ function hideLoadingScreen(): void {
 function showLoadingError(): void {
   window.cancelAnimationFrame(animationFrame);
   if (progressLabel) progressLabel.textContent = 'City startup needs another try';
-  if (errorMessage) errorMessage.hidden = false;
+  if (errorMessage) { errorMessage.hidden = false; errorMessage.textContent = 'Game assets could not load. Check your connection and reload CITYFLOW.'; }
   if (retryButton) retryButton.hidden = false;
   screen?.classList.add('has-error');
 }
@@ -67,6 +67,9 @@ async function bootCityFlow(): Promise<void> {
   animationFrame = window.requestAnimationFrame(animateLoading);
 
   try {
+    if (getComputedStyle(document.documentElement).getPropertyValue('--cityflow-ui-ready').trim() !== '1') {
+      throw new Error('The interface stylesheet did not load. Reload to fetch the latest build.');
+    }
     await Promise.all([import('./main'), ready]);
     window.cancelAnimationFrame(animationFrame);
 

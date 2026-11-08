@@ -7,14 +7,17 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const distRoot = resolve(projectRoot, 'dist');
 const html = await readFile(resolve(distRoot, 'index.html'), 'utf8');
 
-const stylesheet = html.match(/<link\\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+\\.css)["'][^>]*>/i)
-  ?? html.match(/<link\\b(?=[^>]*href=["']([^"']+\\.css)["'])[^>]*>/i);
-const entryScript = html.match(/<script\\b(?=[^>]*type=["']module["'])(?=[^>]*src=["']([^"']+\\.js)["'])[^>]*>/i);
+function readAssetPath(tag, attribute, label) {
+  assert.ok(tag, 'dist/index.html must include a compiled ' + label + ' asset');
+  const match = tag.match(new RegExp(attribute + '=["\\']([^"\\']+)["\\']', 'i'));
+  assert.ok(match, label + ' tag must include its asset path');
+  return match[1];
+}
 
-assert.ok(stylesheet, 'dist/index.html must link a compiled CSS stylesheet');
-assert.ok(entryScript, 'dist/index.html must link a compiled JavaScript entry');
-const stylesheetPath = stylesheet[1] ?? stylesheet[2];
-const scriptPath = entryScript[1] ?? entryScript[2];
+const stylesheetTag = html.match(/<link[^>]*\\.css[^>]*>/i);
+const scriptTag = html.match(/<script[^>]*\\.js[^>]*>/i);
+const stylesheetPath = readAssetPath(stylesheetTag, 'href', 'CSS stylesheet');
+const scriptPath = readAssetPath(scriptTag, 'src', 'JavaScript entry');
 
 for (const [label, assetPath] of [['CSS', stylesheetPath], ['JavaScript', scriptPath]]) {
   assert.ok(assetPath.startsWith('./assets/'), label + ' path must be relative for GitHub Pages project sites');

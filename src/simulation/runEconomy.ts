@@ -1,5 +1,6 @@
+import { platformCost, platformLevel } from './stationCapacity.js';
 import type { GameSimulationState } from './gameSimulation.js';
-import type { MetroLine } from './gameTypes.js';
+import type { MetroLine, Station } from './gameTypes.js';
 import { getShiftPhaseIndex } from './shiftPhases.js';
 
 export const PHASE_REWARD = 8;
@@ -34,6 +35,15 @@ export class RunEconomy {
     state.credits -= cost;
     if (kind === 'capacity') this.capacityLevel += 1;
     else this.expressLevel += 1;
+    return { ok: true, cost, level: level + 1 };
+  }
+
+  expandPlatform(station: Station, budget: { credits: number }): PurchaseResult {
+    const level = platformLevel(station), cost = platformCost(station);
+    if (level >= 2) return { ok: false, reason: 'maxed', cost };
+    if (!Number.isFinite(budget.credits) || budget.credits < cost) return { ok: false, reason: 'funds', cost };
+    budget.credits -= cost;
+    station.platformLevel = level + 1;
     return { ok: true, cost, level: level + 1 };
   }
 

@@ -101,3 +101,12 @@ test('rejects invalid clock configuration', () => {
   assert.throws(() => new FixedStepClock({ maxFrameDeltaSeconds: -1 }), RangeError);
   assert.throws(() => new FixedStepClock({ maxStepsPerFrame: 1.5 }), RangeError);
 });
+
+test('half speed advances half a second across sixty display frames using unchanged fixed steps', () => {
+  const clock = new FixedStepClock();
+  const updates = [];
+  for (let frame = 0; frame < 60; frame += 1) clock.advance(1 / 60, 0.5, dt => updates.push(dt));
+  assert.equal(updates.length, 30);
+  assert.ok(updates.every(dt => dt === 1 / 60));
+  assert.ok(Math.abs(updates.reduce((sum, dt) => sum + dt, 0) - 0.5) < 1e-9);
+});

@@ -175,3 +175,18 @@ Editable HTML moved to `src/index.html`; Vite now serves `src` and builds to `di
 Entry checks run on both plain-static routes. Delaying either entry or engine beyond 20 seconds cannot lock out the menu, and releasing the resource enables Start without a reload. The game still uses a real ready signal to enable controls; it never advertises an uninitialized engine as playable.
 
 Playback labels and aria-pressed now derive from actual pause/speed state, including resume from the main menu. Starting moves keyboard focus to map controls; a final report is a labelled region and focuses its restart action. Further screen-reader and real-device usability testing remains outstanding.
+
+
+## v0.22 — crecimiento, tutorial y decisiones de servicio
+
+`cityGrowthAt` define las etapas 0/30/60/150: 3/6/10/14 estaciones y 1/2/3/4 líneas. El coordinador sincroniza `Station.active`; `NetworkCommands` rechaza estaciones cerradas y el generador de demanda las excluye. No se destruyen estaciones, pasajeros ni aristas existentes al crecer. Los modos de mapa completo conservan sus reglas; la opción progresiva solo se ofrece para urbano y tranquilo. Los récords de crecimiento usan una clave distinta.
+
+`tutorialStep` deriva el siguiente consejo de acciones reales. La presentación conserva su finalización durante el turno y la reinicia al empezar otro. Omitir nunca modifica la simulación ni bloquea funciones. El acceso directo de 0.21 se mantiene, sin puertas de carga.
+
+`operatingPolicies.ts` define velocidad, asientos y parada de cada servicio. Una política de línea se adopta en el tren al embarcar en una estación; el tramo ya iniciado mantiene su política capturada. Las reducciones de capacidad impiden nuevos embarques cuando corresponde y no descartan personas. `NetworkCommands.setPolicy` aplica el coste atómico ($6 en servicio, gratis sin ruta), sin reiniciar la flota. `serviceEstimate` muestra un ciclo e intervalo medio teóricos, sin prometer separación real de vehículos.
+
+`stationCapacity.ts` centraliza nivel, umbral y coste del andén. `RunEconomy.expandPlatform` valida fondos y máximo de dos ampliaciones. El motor usa el mismo umbral al generar demanda y acumular presión; el inspector y el dibujo lo leen también. Reiniciar la red restaura andenes y políticas.
+
+El coordinador renderiza una vez al redimensionar el Canvas, además del ciclo normal, para no dejar un lienzo borrado esperando otro frame. Marcadores y fuentes tienen un tamaño visual mínimo. Las listas de recorrido se reconstruyen solo cuando cambia la topología, conservando el foco de los controles durante actualizaciones del HUD.
+
+La interfaz está traducida directamente en sus fuentes, sin observadores que reescriban el DOM ni dependencias de traducción. IDs de estaciones, modos, fases y almacenamiento siguen estables. Los atajos respetan campos de edición y el menú mantiene pausada la simulación.

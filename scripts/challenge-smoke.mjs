@@ -28,25 +28,25 @@ try{
       await page.click('[data-line="2"]');for(const id of ['museum','university'])await connect(id);
       await page.click('[data-contract="coverage"]');await page.clock.runFor(200);
       await page.click('[data-contract="interchange"]');await page.clock.runFor(200);
-      assert.equal(await page.locator('#grant-count').textContent(),'2 / 3 EARNED');
+      assert.equal(await page.locator('#grant-count').textContent(),'2 / 3 COMPLETADOS');
       await page.click('#speed-button');await page.click('#speed-button');await page.click('#capacity-button');
     }
     await page.click('[data-speed="3"]');
     await page.clock.runFor(110000);
     assert.equal(await page.locator('#game-over').isVisible(),true);
     if(outcome==='win'){
-      assert.equal(await page.locator('#report-outcome').textContent(),'NETWORK CERTIFIED');
+      assert.equal(await page.locator('#report-outcome').textContent(),'RED CERTIFICADA');
       assert.ok(Number(await page.locator('#final-score').textContent())>=30);
     }else{
-      assert.match(await page.locator('#game-over-copy').textContent(),/deadline passed/);
+      assert.match(await page.locator('#game-over-copy').textContent(),/Se acabó el plazo/);
     }
     assert.equal(await page.locator('#pause-button').isDisabled(),true);
     assert.equal(await page.locator('[data-speed="3"]').isDisabled(),true);
-    assert.match(await page.locator('.status-pill').textContent(),outcome==='win'?/CERTIFIED/:/ENDED/);
+    assert.match(await page.locator('.status-pill').textContent(),outcome==='win'?/CERTIFICADA/:/FINALIZADO/);
     const score=await page.locator('#score').textContent(),time=await page.locator('#city-time').textContent();
     await page.clock.runFor(1000);assert.equal(await page.locator('#score').textContent(),score);assert.equal(await page.locator('#city-time').textContent(),time);
     await page.locator('#game-over').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/${outcome}.png`,fullPage:true});
-    await page.click('#restart-button');assert.equal(await page.locator('#credits').textContent(),'$32');assert.equal(await page.locator('#challenge-clock').textContent(),'320s left');assert.equal(await page.locator('#game-over').isVisible(),false);assert.equal(await page.locator('#pause-button').isDisabled(),false);
+    await page.click('#restart-button');assert.equal(await page.locator('#credits').textContent(),'$32');assert.equal(await page.locator('#challenge-clock').textContent(),'320 s restantes');assert.equal(await page.locator('#game-over').isVisible(),false);assert.equal(await page.locator('#pause-button').isDisabled(),false);
     assert.deepEqual(errors,[]);console.log(`Certification ${outcome}: actual gameplay, report, frozen outcome and restart passed`);await page.close();
   }
 }finally{await browser.close();}

@@ -25,6 +25,9 @@
     "src/simulation/runState.ts",
     "src/simulation/networkCommands.ts",
     "src/simulation/runEconomy.ts",
-    "src/simulation/serviceChallenge.ts"
+    "src/simulation/serviceChallenge.ts",
+    "src/simulation/operatingPolicies.ts",
+    "src/simulation/stationCapacity.ts",
+    "src/simulation/cityGrowth.ts"
   ]
 }

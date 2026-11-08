@@ -1,17 +1,17 @@
 export const SERVICE_PLANS = {
-  standard: { name: 'City shift', demand: 1, overloadSeconds: 17, startingCredits: 28, ranked: true, description: 'The original five-phase shift. Build, adapt and survive.' },
-  relaxed: { name: 'Gentle shift', demand: 0.7, overloadSeconds: 25, startingCredits: 40, ranked: true, description: 'More planning time, lighter demand and $40 to begin.' },
-  rush: { name: 'Rush hour', demand: 1.5, overloadSeconds: 12, startingCredits: 28, ranked: true, description: '50% more demand. Just 12 seconds to rescue a critical station.' },
-  challenge: { name: 'Network certification', demand: 1, overloadSeconds: 17, startingCredits: 32, ranked: true, description: 'Before 320 simulation seconds: deliver 30 people, connect 8 stations and complete 2 grants. $32 starting funds.' },
-  sandbox: { name: 'Free build', demand: 0.7, overloadSeconds: Infinity, startingCredits: 150, ranked: false, description: 'No overload defeat. $150 to experiment; no ranked score.' },
+  standard: { name: 'Turno urbano', demand: 1, overloadSeconds: 17, startingCredits: 28, ranked: true, description: 'Cinco fases para construir y adaptar la red. Con ciudad progresiva empiezas con poco.' },
+  relaxed: { name: 'Turno tranquilo', demand: 0.7, overloadSeconds: 25, startingCredits: 40, ranked: true, description: 'Menos demanda, más tiempo para pensar y $40 iniciales.' },
+  rush: { name: 'Hora pico', demand: 1.5, overloadSeconds: 12, startingCredits: 28, ranked: true, description: '50% más demanda. Solo 12 segundos para resolver una cola crítica.' },
+  challenge: { name: 'Certificación de red', demand: 1, overloadSeconds: 17, startingCredits: 32, ranked: true, description: 'Antes de 320 segundos: transporta 30 personas, conecta 8 estaciones y completa 2 contratos. Empiezas con $32.' },
+  sandbox: { name: 'Modo libre', demand: 0.7, overloadSeconds: Infinity, startingCredits: 150, ranked: false, description: 'Sin derrota por congestión. $150 para experimentar; sin clasificación.' },
 } as const;
 export type ServicePlanId = keyof typeof SERVICE_PLANS;
 
 export type DistrictEvent = { id: string; name: string; stationId: string; start: number; end: number; description: string };
 const EVENT_LOCATIONS = [
-  { name: 'Museum late opening', stationId: 'museum', description: 'Visitors are heading to Museum Mile. Give the cultural district a direct service.' },
-  { name: 'Harbor ferry arrival', stationId: 'harbor', description: 'Ferry passengers are leaving Old Harbor. Connect the waterfront to the rest of the city.' },
-  { name: 'University open day', stationId: 'university', description: 'Extra visitors are heading to University. A second connection can share the load.' },
+  { name: 'Noche de museos', stationId: 'museum', description: 'Llegan visitantes al Museo Central. Prepara un servicio directo al distrito cultural.' },
+  { name: 'Llega el ferry', stationId: 'harbor', description: 'Los pasajeros salen de Puerto Viejo. Conecta la costa con el resto de la ciudad.' },
+  { name: 'Jornada universitaria', stationId: 'university', description: 'La Universidad recibe más visitantes. Otra conexión puede repartir la demanda.' },
 ] as const;
 /** Seeded schedule avoids overlapping the established stadium phases. */
 export function districtEventAt(elapsed: number, seed: number): DistrictEvent | null {

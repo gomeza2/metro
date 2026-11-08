@@ -7,6 +7,7 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const distRoot = process.argv.includes('--root') ? projectRoot : resolve(projectRoot, 'dist');
 const html = await readFile(resolve(distRoot, 'index.html'), 'utf8');
 assert.ok(!html.includes('id="loading-screen"'), 'The production entry must open the menu without a blocking loader');
+assert.match(html, /<html[^>]*lang="es"/, 'The published game must declare Spanish');
 assert.ok(!html.includes('media="print"'), 'Game CSS must load normally without onload/media gating');
 
 function readAssetPath(tag, attribute, label) {

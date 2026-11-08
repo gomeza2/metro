@@ -11,7 +11,7 @@ try{
     const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(base);await page.waitForSelector('#start-game:not([disabled])');
     assert.equal(await page.locator('#loading-screen').count(),0);assert.equal(await page.locator('#main-menu').isVisible(),true);
-    assert.match(await page.locator('#startup-status').textContent(),/Ready to play/);
+    assert.match(await page.locator('#startup-status').textContent(),/Todo listo/);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await page.screenshot({path:`${output}/${name}-direct-menu.png`});
     await page.click('#start-game');await page.waitForFunction(()=>getComputedStyle(document.querySelector('#main-menu')).visibility==='hidden');
@@ -27,7 +27,7 @@ try{
     await page.clock.runFor(25000);
     assert.notEqual(await page.locator('html').getAttribute('data-cityflow-startup'),'failed');
     assert.equal(await page.locator('#start-game').isDisabled(),true);
-    assert.match(await page.locator('#startup-status').textContent(),/still connecting/);
+    assert.match(await page.locator('#startup-status').textContent(),/siguen conectándose/);
     release();await page.waitForSelector('#start-game:not([disabled])');
     await page.clock.resume();await page.click('#start-game');
     assert.equal(await page.locator('#main-menu').getAttribute('aria-hidden'),'true');
@@ -38,7 +38,7 @@ try{
     await page.route(target==='css'?'**/*.css':target==='entry'?'**/assets/index-*.js':'**/assets/main-*.js',route=>route.abort());
     await page.goto(base);await page.waitForSelector('#startup-retry:not([hidden])');
     assert.equal(await page.locator('#main-menu').isVisible(),true);assert.equal(await page.locator('#loading-screen').count(),0);
-    if(target==='css'){await page.waitForSelector('#start-game:not([disabled])');assert.match(await page.locator('#startup-status').textContent(),/styles could not load/);}
+    if(target==='css'){await page.waitForSelector('#start-game:not([disabled])');assert.match(await page.locator('#startup-status').textContent(),/faltan los estilos/);}
     await page.unrouteAll();await page.click('#startup-retry');await page.waitForSelector('#start-game:not([disabled])');
     assert.ok(new URL(page.url()).searchParams.has('cityflow_reload'));
     await page.close();console.log(`Missing ${target}: inline notice and successful retry passed`);

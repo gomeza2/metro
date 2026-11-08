@@ -270,13 +270,13 @@ function drawStaticCity(ctx: CanvasRenderingContext2D): void {
   ctx.restore();
 
   // District labels sit behind the playable stations and routes.
-  districtLabel(ctx, 'WEST GARDENS', 205, 210);
-  districtLabel(ctx, 'NORTH QUARTER', 350, 165);
-  districtLabel(ctx, 'OLD TOWN', 392, 375);
-  districtLabel(ctx, 'CIVIC DISTRICT', 590, 485);
-  districtLabel(ctx, 'EASTBANK', 860, 315);
-  districtLabel(ctx, 'SOUTH QUAY', 500, 710);
-  districtLabel(ctx, 'COASTAL EDGE', 1045, 710);
+  districtLabel(ctx, 'JARDINES DEL OESTE', 205, 210);
+  districtLabel(ctx, 'BARRIO NORTE', 350, 165);
+  districtLabel(ctx, 'CASCO ANTIGUO', 392, 375);
+  districtLabel(ctx, 'DISTRITO CÍVICO', 590, 485);
+  districtLabel(ctx, 'RIBERA ESTE', 860, 315);
+  districtLabel(ctx, 'MUELLE SUR', 500, 710);
+  districtLabel(ctx, 'BORDE COSTERO', 1045, 710);
 }
 
 const CITY_LAYER_WIDTH = 1200;

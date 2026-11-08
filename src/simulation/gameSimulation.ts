@@ -1,3 +1,5 @@
+import { OPERATING_POLICIES, trainSeats, trainSpeed } from './operatingPolicies.js';
+import { stationQueueLimit } from './stationCapacity.js';
 import type { RunEconomy } from './runEconomy.js';
 import { districtEventAt, SERVICE_PLANS, type ServicePlanId } from './servicePlans.js';
 import type { RoutePlanner } from './pathfinding.js';
@@ -92,7 +94,7 @@ export class GameSimulation {
         if (!current || !next) continue;
 
         const distance = Math.hypot(next.x - current.x, next.y - current.y);
-        const travelUnitsPerSecond = 105 * this.options.getExpressLevel();
+        const travelUnitsPerSecond = trainSpeed(this.options.getExpressLevel(), train.policy ?? line.policy ?? 'balanced');
         train.progress += (dt * travelUnitsPerSecond) / Math.max(1, distance);
 
         if (train.progress >= 1) {
@@ -101,13 +103,14 @@ export class GameSimulation {
           train.progress = 0;
           train.dwell = 0.45;
           this.arriveAtStation(line, train, next);
+          train.dwell = OPERATING_POLICIES[train.policy ?? 'balanced'].dwell;
         }
       }
     }
 
     let overloadHandled = false;
     for (const station of stations) {
-      if (station.queue.length > 12) station.overload += dt;
+      if (station.queue.length > stationQueueLimit(station)) station.overload += dt;
       else station.overload = Math.max(0, station.overload - dt * 0.7);
 
       if (station.overload >= plan.overloadSeconds && !overloadHandled) {
@@ -127,10 +130,12 @@ export class GameSimulation {
     const connected: PassengerTripCandidate<Station>[] = [];
 
     for (const from of stations) {
-      if (from.queue.length >= 16) continue;
+      if (from.active === false) continue;
+      if (from.queue.length >= stationQueueLimit(from) + 4) continue;
 
       for (const to of stations) {
-        if (from.id === to.id || to.queue.length >= 16) continue;
+        if (to.active === false) continue;
+        if (from.id === to.id || to.queue.length >= stationQueueLimit(to) + 4) continue;
         const route = planner.findRoute(from.id, to.id);
         if (!route || route.length < 2) continue;
 
@@ -175,7 +180,10 @@ export class GameSimulation {
     const next = this.nextTrainStop(line, train);
     if (!next) return;
 
-    const availableSeats = 6 * this.options.getCapacityLevel() - train.passengers.length;
+    // A policy is adopted at a station, never halfway through a leg. Existing
+    // riders keep their seats even if the new policy has a lower capacity.
+    train.policy = line.policy ?? 'balanced';
+    const availableSeats = trainSeats(this.options.getCapacityLevel(), train.policy) - train.passengers.length;
     const result = selectPassengersForBoarding(
       station.queue,
       station.id,

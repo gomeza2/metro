@@ -26,7 +26,7 @@ try {
     await page.waitForFunction(() => getComputedStyle(document.querySelector('#main-menu')).visibility === 'hidden');
     assert.equal(await page.evaluate(()=>document.activeElement.id),'map-mode-button');
     assert.equal(await page.locator('#credits').textContent(), '$150');
-    assert.equal(await page.locator('#best-score').textContent(), 'FREE');
+    assert.equal(await page.locator('#best-score').textContent(), 'LIBRE');
     // Real canvas taps, including letterboxing in portrait layouts.
     const tap = async (x, y) => {
       await page.locator('#game-canvas').scrollIntoViewIfNeeded();
@@ -39,7 +39,7 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-line="0"]').textContent.includes('2'));
     await page.click('#pause-button');
     await page.click('.brand');await page.click('#start-game');
-    assert.match(await page.locator('#pause-button').textContent(),/Pause/);
+    assert.match(await page.locator('#pause-button').textContent(),/Pausa/);
     assert.equal(await page.locator('#pause-button').getAttribute('aria-pressed'),'false');
     await page.click('#pause-button');
     // Keyboard-accessible selection, transfer network, contract reward.
@@ -55,7 +55,7 @@ try {
     await page.click('#pause-button');
     assert.equal(await page.locator('#credits').textContent(), '$164');
     await page.click('#capacity-button');assert.equal(await page.locator('#credits').textContent(),'$152');
-    await page.click('#dispatch-button');assert.equal(await page.locator('#fleet-state').textContent(),'Fleet · 2/3 trains');
+    await page.click('#dispatch-button');assert.equal(await page.locator('#fleet-state').textContent(),'Flota · 2/3 trenes');
     await page.click('#map-mode-button');
     assert.equal(await page.locator('#map-mode-button').getAttribute('aria-pressed'),'true');
     // Zoom and drag must not edit the network. Fit restores coordinate mapping.
@@ -75,7 +75,7 @@ try {
     await page.click('#new-shift');
     await page.selectOption('#service-plan','relaxed');await page.click('#start-game');
     assert.equal(await page.locator('#credits').textContent(),'$40');
-    assert.equal(await page.locator('#grant-count').textContent(),'0 / 3 EARNED');
+    assert.equal(await page.locator('#grant-count').textContent(),'0 / 3 COMPLETADOS');
     assert.ok((await page.locator('[data-line="0"]').textContent()).includes('0'));
     console.log(`${name}: assets, gameplay, grants, economy, zoom/pan, DPR, restart passed`);
     await page.close();

@@ -112,3 +112,25 @@ select:focus-visible{outline:3px solid #b7d4a5;outline-offset:3px;}
 .station-destinations { padding:10px 12px;background:#b7d4a50d;border-left:2px solid #b7d4a5;border-radius:0 6px 6px 0;color:#cedddc;font-size:12px;line-height:1.6; }
 .startup-notice { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin:14px 0 0; padding:10px 14px; background:#b7d4a50a; border:1px solid #3b535b; border-radius:8px; color:#c6d9d9; font-size:12px; line-height:1.5; }
 .startup-notice button { background:#b7d4a5; color:#193529; border:0; border-radius:6px; min-height:42px; padding:8px 12px; font-weight:600; }
+/* A quiet opening, with strategy available when the player wants it. */
+.beginner-options { display:grid; gap:8px; max-width:470px; margin-top:18px; }
+.beginner-options label { display:flex; align-items:center; gap:10px; min-height:44px; font-size:13px; line-height:1.5; color:#d8e4dc; cursor:pointer; }
+.beginner-options input { flex:0 0 auto; width:20px; height:20px; accent-color:#b7d4a5; }
+.beginner-options small { color:#acc2ca; font-size:11px; line-height:1.6; }
+.game-frame>#start-hint { position:static; max-width:none; margin:0; padding:14px 18px; border:0; border-top:1px solid #cad7c5; border-radius:0; box-shadow:none; gap:12px; background:#f7f8ed; }
+.game-frame>#start-hint .hint-number { flex:0 0 58px; width:58px; height:36px; font-size:11px; }
+.game-frame>#start-hint strong { font-size:14px; }.game-frame>#start-hint small { display:block; max-width:650px; font-size:12px; line-height:1.6; }
+.game-frame>#start-hint button { margin-left:auto; min-width:42px; min-height:42px; }
+.growth-state { width:100%; font-size:11px; line-height:1.5; color:#35534d; }
+#growth-fit { background:#f6f7ed; color:#294b49; border:1px solid #9bb6a3; border-radius:6px; min-height:38px; padding:7px 10px; font-size:11px; cursor:pointer; }
+.line-operations { order:3; border:1px solid #435b65; border-radius:12px; background:#1a3039; margin-top:14px; overflow:hidden; }
+.line-operations summary { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; min-height:50px; font-size:13px; font-weight:700; cursor:pointer; }
+.line-operations summary::after { content:'⌄'; font-size:18px; color:#bad4c4; }.line-operations summary small { margin-left:auto; color:#b2c8cd; font-size:10px; font-weight:400; }
+.operations-content { padding:0 16px 16px; }.operations-content>label { display:block; font-size:11px; color:#c2d4d9; margin:5px 0 8px; }
+.policy-actions { display:flex; gap:10px; }.policy-actions select { min-width:0; flex:1; max-width:100%; background:#243f49; color:#f1f5e9; border:1px solid #68818a; border-radius:8px; padding:10px; min-height:44px; font-size:12px; }.policy-actions button { background:#b7d4a5; color:#193529; border:0; border-radius:8px; padding:10px 14px; min-height:44px; font-size:12px; font-weight:700; cursor:pointer; }
+#policy-description,.service-note { font-size:12px; color:#bed0d5; line-height:1.6; margin:12px 0; }.service-note{font-size:10px;}
+.service-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:14px 0; }.service-metrics div{padding:10px;border-radius:8px;background:#ffffff06;}.service-metrics dt{font-size:10px;color:#adc4cc;line-height:1.5;}.service-metrics dd{margin:5px 0 0;font-size:16px;color:#e0eadd;font-weight:700;}
+.line-route{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11px;color:#acc5c8;}.line-route button{min-height:38px;border:1px solid #48666e;border-radius:7px;background:#243d45;color:#dae5de;padding:7px 10px;font-size:11px;cursor:pointer;}.line-route button:hover{border-color:#b7d4a5;}
+.upgrade-strip{order:4;}.platform-button{width:100%;margin-top:12px;min-height:46px;padding:10px;border:1px solid #6d8975;border-radius:8px;background:#b7d4a51a;color:#d6e9c9;font-size:12px;line-height:1.5;cursor:pointer;}.platform-note{display:block;font-size:10px;line-height:1.6;color:#aec4c9;margin-top:7px;}
+@media(max-width:620px){.game-frame>#start-hint{padding:10px;gap:8px;align-items:flex-start;}.game-frame>#start-hint .hint-number{flex-basis:44px;width:44px;font-size:9px;}.game-frame>#start-hint strong{font-size:12px;}.game-frame>#start-hint small{font-size:11px;}.line-operations summary{padding:12px;font-size:12px;}.line-operations summary small{display:none;}.operations-content{padding:0 12px 12px;}.policy-actions{flex-direction:column;}.service-metrics{gap:6px;}.service-metrics div{padding:8px;}.service-metrics dd{font-size:13px;}.growth-state{font-size:10px;}.intro-row .speed-button{width:28px;font-size:11px;}.intro-row .playback-row{gap:3px;}.beginner-options label{font-size:12px;}.beginner-options small{font-size:11px;}}
+@media(max-width:360px){.intro-row{flex-wrap:wrap;gap:10px;}.intro-row .playback-row{width:100%;justify-content:flex-end;}.game-frame>#start-hint .hint-number{display:none;}.map-topline{flex-wrap:wrap;gap:8px;}.map-status{overflow-wrap:anywhere;}}

@@ -2,9 +2,9 @@ export const CHALLENGE_DURATION = 320;
 export type ChallengeSnapshot = { elapsed: number; score: number; coverage: number; grants: number };
 export function serviceChallengeStatus(snapshot: ChallengeSnapshot) {
   const goals = [
-    { label: 'Deliver 30 passengers', current: snapshot.score, target: 30 },
-    { label: 'Connect 8 stations in one network', current: snapshot.coverage, target: 8 },
-    { label: 'Complete 2 city grants', current: snapshot.grants, target: 2 },
+    { label: 'Transporta 30 personas', current: snapshot.score, target: 30 },
+    { label: 'Conecta 8 estaciones en una red', current: snapshot.coverage, target: 8 },
+    { label: 'Completa 2 contratos', current: snapshot.grants, target: 2 },
   ];
   const remaining = Math.max(0, CHALLENGE_DURATION - snapshot.elapsed);
   // Deadlines are exclusive, matching city grants. All goals must hold together.

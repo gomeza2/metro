@@ -268,3 +268,27 @@ The user reported repeated 20-second startup failures and explicitly requested e
 Publication now supports main/root directly with compiled assets, as well as the Actions build. The entry gate is not reintroduced as a timer, progress animation or stylesheet readiness condition.
 
 Following the accessibility milestone, keyboard focus now moves into map controls on start and to Restart on a final report; playback labels and pressed states match the actual simulation state after returning from the menu. Persistent run history, full rendering extraction and human balancing remain next.
+
+
+## v0.22 — aprender con una ciudad pequeña
+
+La experiencia recomendada arranca con Barrio Norte, Museo Central y Mercado Central, una línea y un tutorial omisible. A los 30 segundos se abren Puerto Viejo, Jardines del Oeste y Los Manzanos; a los 60, Plaza Cívica, Ribera Este, Universidad y Gran Estadio; a los 150, Clínica del Río, Muelle Sur, Las Colinas y Aeropuerto. El reloj usa tiempo de simulación y la pausa permite planificar sin presión. La ciudad completa se puede elegir desde el menú y sigue siendo el inicio de los modos especializados.
+
+El tutorial enseña con hechos, no con diálogos obligatorios: crear una ruta, transportar a alguien, pausar e inspeccionar. El mapa tiene prioridad; la planificación avanzada aparece tras el primer viaje o al omitir la ayuda. Las cinco fases y el evento del estadio siguen presentes y se muestran en español.
+
+Las políticas no son mejoras estrictamente superiores: local cambia velocidad por asientos; rápido cambia asientos por velocidad y paradas cortas. El cambio cuesta fondos y se adopta en estaciones para evitar alternar gratis a mitad de un tramo. Las estimaciones ayudan a comparar, pero la cola y ocupación real siguen siendo la evidencia principal.
+
+La ampliación de un andén da margen local y compite por fondos con un tren, una mejora global o un cambio de servicio. No aumenta la capacidad de transporte por sí sola. No se añadieron costes recurrentes ni nuevas derrotas al modo libre.
+
+### Hoja de ruta actualizada
+
+- [x] Acceso directo y publicación compilada para main/root.
+- [x] Español en interfaz, eventos, estaciones, fases y reportes.
+- [x] Inicio de 3 estaciones/1 línea, crecimiento y tutorial breve omisible.
+- [x] Servicio por línea con ventajas y costes; comparaciones antes de aplicar.
+- [x] Inversión en andenes y presión coherente con el tamaño de estación.
+- [x] Media velocidad, atajos, etiquetas legibles y pausa segura en el menú.
+- [ ] Probar el equilibrio con personas: políticas, plazos y ritmo de expansión.
+- [ ] Historial persistente de partidas y escenarios adicionales.
+- [ ] Separar el renderizador dinámico y perfilar móviles reales.
+- [ ] Campaña, desbloqueos permanentes y nuevas ciudades, sin anticiparlos en la interfaz.

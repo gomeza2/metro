@@ -2,26 +2,39 @@
 
 A small, original urban-transit strategy game prototype. Build metro lines, connect stations, move passengers, manage capacity, and keep the network flowing.
 
-## Current release — v0.21.0 · Direct entry and main/root publishing
+## Versión actual — 0.22.0 · Una ciudad que crece contigo
 
-The game opens directly on the menu. There is no blocking loading screen, progress gate or 20-second failure lock. If a script takes time, the menu stays visible and the Start button becomes available automatically when controls connect. A failed script offers an inline retry.
+CITYFLOW está en español: menú, estaciones, tutorial, fases, contratos, eventos, controles y reportes.
 
-Both GitHub Pages publication modes are supported: Actions deploys `dist/`, while branch-based `main / root` serves the committed compiled `index.html` and `assets/`. Application HTML source is now `src/index.html`; browsers are never asked to execute source TypeScript in the root site.
+El **turno urbano** y el **turno tranquilo** comienzan, por defecto, con **3 estaciones y 1 línea**. La ciudad crece según el tiempo de simulación:
 
-Route edits, fleet dispatch and network reset now run through tested engine commands. Selecting an existing endpoint keeps the fleet moving. Passengers on other lines replan at their next arrival; a removed transfer leaves them waiting for reconnection instead of creating false deliveries.
+| Momento | Estaciones disponibles | Líneas disponibles |
+| --- | --- | --- |
+| Inicio | 3: Barrio Norte, Museo Central y Mercado Central | 1 |
+| 30 segundos | 6 | 2 |
+| 60 segundos | 10, incluido el Gran Estadio | 3 |
+| 150 segundos | Las 14 | Las 4 |
 
-A map-led operations desk with larger type, readable touch controls, mobile panel navigation and a shared city preview. All fourteen stations, four editable lines, transfers, upgrades, optional audio and the five stadium shift phases remain available.
+El reloj espera la primera conexión y se detiene al pausar. El estadio abre antes de su fase de preparación. Puedes desactivar «Ciudad progresiva» para jugar con el mapa completo; libre, hora pico y certificación siempre empiezan con toda la ciudad. Los récords progresivos se guardan aparte de los de ciudad completa.
 
-- Uniform Canvas scaling with DPR-aware backing store, 1–3× zoom, drag-to-pan, Fit and a keyboard station selector. Ctrl/Meta+wheel zooms; ordinary scrolling stays available.
-- Five service plans: **City shift** (original balance), **Gentle shift** (70% demand, 25-second rescue window, $40), **Rush hour** (150% demand, 12-second rescue window), **Free build** (70% demand, $150, no overload defeat) and **Network certification** (a timed victory challenge).
-- **Network certification:** start with $32 and complete 30 deliveries, eight stations in one connected network and two grants before 320 simulation seconds. All goals must hold together. Overload can still end the run. The first service starts the clock; pause stops it.
-- Capacity/express purchases and phase rewards are now engine commands. The inspector lists leading passenger destinations and explains broken connections.
-- Optional city grants: ten new deliveries, eight stations in one connected network or a three-line interchange. Accept one at a time; complete it before its simulation-time deadline for funds. Each grant allows one attempt per shift; restarting restores the offers.
-- Seeded museum, harbor and university events redirect connected passenger demand. An advance notice and map ring identify the affected district. The existing stadium phases keep their own time window.
-- Ranked best scores are separate for each difficulty; the original standard score is preserved. Free build is unranked. Audio and Spotify remain optional.
-- Missing CSS produces an inline retry notice; it cannot lock the game behind a loading screen. Production output includes the exact package version and verified relative asset paths.
+El tutorial se integra a la partida: conectar, observar una entrega, pausar e inspeccionar. Se puede omitir y no bloquea acciones. Las inversiones y la planificación avanzada aparecen después del primer viaje; omitir el tutorial las muestra desde el inicio. No hay pantalla de carga ni bloqueo de 20 segundos.
 
-Play the published build: https://gomeza2.github.io/metro/ (publication may lag this branch).
+### Más decisiones de operación
+
+- **Equilibrada:** 6 asientos por tren y la velocidad original.
+- **Servicio local:** 9 asientos de base, velocidad ×0,82 y paradas más largas. Útil para trayectos cortos con colas grandes.
+- **Servicio rápido:** 4 asientos de base, velocidad ×1,28 y paradas más cortas. Útil para conexiones largas con menos pasajeros.
+- Cambiar una política cuesta **$6** con una ruta activa; antes es gratis. Cada tren adopta el cambio en su próxima parada. Los pasajeros a bordo no se eliminan si baja la capacidad.
+- El panel de línea permite comparar asientos, ida y vuelta e intervalo medio **estimados** antes de aplicar. Sus botones de estación inspeccionan sin recortar la ruta.
+- Un **andén** puede pasar de 12 a 18 plazas por $16 y de 18 a 24 por $34. Da margen ante las colas; no reemplaza la frecuencia de los trenes. Las mejoras globales y la flota original se conservan.
+
+### Controles y calma
+
+½× / 1× / 2× / 3×; Espacio para pausar; 1–4 para elegir una línea habilitada; I para inspeccionar; Z para deshacer; + / − para zoom y 0 para ver toda la ciudad. El selector de estaciones sigue siendo una alternativa al mapa. Las etiquetas y marcadores se ajustan a la escala, y el tutorial queda fuera del área de dibujo.
+
+Se conservan los cinco modos, las cinco fases, los transbordos, los contratos, el estadio, la certificación, la música opcional y el acceso directo. Ambos modos de publicación de Pages siguen soportados: Actions usa `dist/`; `main / root` sirve el HTML y los recursos compilados incluidos en la raíz.
+
+Jugar: https://gomeza2.github.io/metro/ · [Validación de esta versión](docs/QA_0.22.md)
 
 ## Run locally
 

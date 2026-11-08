@@ -1,3 +1,4 @@
+import { OPERATING_POLICIES, POLICY_CHANGE_COST, type OperatingPolicyId } from './operatingPolicies.js';
 import { createRoutePlanner, type RoutePlanner } from './pathfinding.js';
 import type { MetroLine, Station, Train } from './gameTypes.js';
 
@@ -17,7 +18,7 @@ export class NetworkCommands {
 
   selectStation(lineId: number, stationId: string): RouteEditResult {
     const line = this.lines.find(item => item.id === lineId);
-    if (!line || !this.stationById.has(stationId)) return 'invalid';
+    if (!line || !this.stationById.has(stationId) || this.stationById.get(stationId)?.active === false) return 'invalid';
     const index = line.stations.indexOf(stationId);
     if (index === line.stations.length - 1 && index >= 0) return 'unchanged';
     if (index >= 0) line.stations = line.stations.slice(0, index + 1);
@@ -53,9 +54,19 @@ export class NetworkCommands {
     return true;
   }
 
+  setPolicy(lineId: number, policy: OperatingPolicyId, budget: { credits: number }): boolean {
+    const line = this.lines.find(item => item.id === lineId);
+    if (!line || !Object.hasOwn(OPERATING_POLICIES, policy) || (line.policy ?? 'balanced') === policy) return false;
+    const cost = line.stations.length >= 2 ? POLICY_CHANGE_COST : 0;
+    if (!Number.isFinite(budget.credits) || budget.credits < cost) return false;
+    budget.credits -= cost;
+    line.policy = policy;
+    return true;
+  }
+
   reset(): void {
-    for (const station of this.stations) { station.queue = []; station.overload = 0; }
-    for (const line of this.lines) { line.stations = []; line.trains = []; line.fleetSize = 1; }
+    for (const station of this.stations) { station.queue = []; station.overload = 0; station.platformLevel = 0; }
+    for (const line of this.lines) { line.stations = []; line.trains = []; line.fleetSize = 1; line.policy = 'balanced'; }
     this.trainSequence = 1;
     this.planner = createRoutePlanner(this.stations, this.lines);
   }
@@ -63,7 +74,7 @@ export class NetworkCommands {
   private createTrain(line: MetroLine, index: number, direction: 1 | -1, dwell = 0.7): Train {
     const stationId = line.stations[index];
     if (!stationId) throw new Error('A train requires a valid route station.');
-    return { id: this.trainSequence++, lastStationId: stationId, stationIndex: index, direction, progress: 0, dwell, passengers: [] };
+    return { id: this.trainSequence++, lastStationId: stationId, stationIndex: index, direction, progress: 0, dwell, passengers: [], policy: line.policy ?? 'balanced' };
   }
 
   private spacedTrain(line: MetroLine): Train {

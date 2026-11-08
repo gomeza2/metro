@@ -1,3 +1,4 @@
+import type { OperatingPolicyId } from './operatingPolicies.js';
 import type { PassengerDistrictKind } from './passengerDemand.js';
 
 export type StationKind = PassengerDistrictKind;
@@ -17,6 +18,8 @@ export type Station = {
   kind: StationKind;
   queue: Passenger[];
   overload: number;
+  platformLevel?: number;
+  active?: boolean;
 };
 
 export type Train = {
@@ -27,6 +30,7 @@ export type Train = {
   progress: number;
   dwell: number;
   passengers: Passenger[];
+  policy?: OperatingPolicyId;
 };
 
 export type MetroLine = {
@@ -36,4 +40,5 @@ export type MetroLine = {
   stations: string[];
   trains: Train[];
   fleetSize: number;
+  policy?: OperatingPolicyId;
 };

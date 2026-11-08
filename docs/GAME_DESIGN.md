@@ -225,3 +225,15 @@ Museum openings, ferry arrivals and university open days vary the focus of a shi
 - [ ] Add curated victory scenarios, seeded replay, local run history and persistent unlocks before new cities.
 
 No campaign, second city, daily challenge or permanent progression is advertised as implemented in this release.
+
+
+## v0.19 — trustworthy loading and edits during service
+
+- The loading card identifies estimated progress, shows a real ready state and keeps the menu inert until startup succeeds. A failed download or 20-second timeout gives one clear retry. Missing entry JavaScript and missing CSS are covered independently of the game engine.
+- Selecting the current line endpoint is now a no-op for the fleet, so inspecting or repeating the last tap cannot reset service.
+- Removing a transfer no longer strands onboard riders on obsolete instructions. They replan at arrival, wait if disconnected and resume when a useful connection returns. Edits preserve passengers and delivery accounting.
+- Route/fleet editing and reset have moved behind tested network commands. The next architecture milestone is moving upgrade and phase-reward accounting out of the HUD, followed by curated victory scenarios and persistent run history. New cities and permanent unlocks remain future content.
+
+### Validation and remaining publication check
+
+See `QA_0.19.md`. The user explicitly requested integration into GitHub main after validation. This does not establish that the Pages deployment completed: direct Pages and API checks remain blocked by the environment's egress policy.

@@ -1,0 +1,101 @@
+import { createRoutePlanner, type RoutePlanner } from './pathfinding.js';
+import type { MetroLine, Station, Train } from './gameTypes.js';
+
+export const dispatchCost = (line: MetroLine): number => 18 + Math.max(0, line.fleetSize - 1) * 16;
+export type RouteEditResult = 'extended' | 'trimmed' | 'unchanged' | 'invalid';
+
+/** Owns topology changes, fleet placement and the planner snapshot as one operation. */
+export class NetworkCommands {
+  planner: RoutePlanner;
+  private trainSequence = 1;
+  private readonly stationById: Map<string, Station>;
+
+  constructor(private readonly stations: Station[], private readonly lines: MetroLine[]) {
+    this.stationById = new Map(stations.map(station => [station.id, station]));
+    this.planner = createRoutePlanner(stations, lines);
+  }
+
+  selectStation(lineId: number, stationId: string): RouteEditResult {
+    const line = this.lines.find(item => item.id === lineId);
+    if (!line || !this.stationById.has(stationId)) return 'invalid';
+    const index = line.stations.indexOf(stationId);
+    if (index === line.stations.length - 1 && index >= 0) return 'unchanged';
+    if (index >= 0) line.stations = line.stations.slice(0, index + 1);
+    else line.stations.push(stationId);
+    this.rebuild(line);
+    return index >= 0 ? 'trimmed' : 'extended';
+  }
+
+  undo(lineId: number): boolean {
+    const line = this.lines.find(item => item.id === lineId);
+    if (!line?.stations.length) return false;
+    line.stations.pop();
+    this.rebuild(line);
+    return true;
+  }
+
+  clear(lineId: number): boolean {
+    const line = this.lines.find(item => item.id === lineId);
+    if (!line?.stations.length) return false;
+    line.stations = [];
+    this.rebuild(line);
+    return true;
+  }
+
+  dispatch(lineId: number, budget: { credits: number }): boolean {
+    const line = this.lines.find(item => item.id === lineId);
+    if (!line || line.stations.length < 2 || line.fleetSize >= 3 || budget.credits < dispatchCost(line)) return false;
+    const cost = dispatchCost(line);
+    const train = this.spacedTrain(line);
+    budget.credits -= cost;
+    line.trains.push(train);
+    line.fleetSize += 1;
+    return true;
+  }
+
+  reset(): void {
+    for (const station of this.stations) { station.queue = []; station.overload = 0; }
+    for (const line of this.lines) { line.stations = []; line.trains = []; line.fleetSize = 1; }
+    this.trainSequence = 1;
+    this.planner = createRoutePlanner(this.stations, this.lines);
+  }
+
+  private createTrain(line: MetroLine, index: number, direction: 1 | -1, dwell = 0.7): Train {
+    const stationId = line.stations[index];
+    if (!stationId) throw new Error('A train requires a valid route station.');
+    return { id: this.trainSequence++, lastStationId: stationId, stationIndex: index, direction, progress: 0, dwell, passengers: [] };
+  }
+
+  private spacedTrain(line: MetroLine): Train {
+    let bestIndex = 0;
+    let bestSpacing = -1;
+    for (let index = 0; index < line.stations.length; index += 1) {
+      const spacing = line.trains.length
+        ? Math.min(...line.trains.map(train => Math.abs(index - (train.stationIndex + train.direction * train.progress))))
+        : line.stations.length;
+      if (spacing > bestSpacing) { bestIndex = index; bestSpacing = spacing; }
+    }
+    return this.createTrain(line, bestIndex, bestIndex === line.stations.length - 1 ? -1 : 1, 1.1);
+  }
+
+  private rebuild(line: MetroLine): void {
+    // Return all riders before replacing an edited fleet. Never discard people with a route.
+    for (const train of line.trains) {
+      const station = this.stationById.get(train.lastStationId);
+      if (!station) throw new Error('Cannot edit a fleet with an unknown last station.');
+      station.queue.push(...train.passengers);
+    }
+    line.trains = [];
+    if (line.stations.length >= 2) {
+      line.trains.push(this.createTrain(line, 0, 1));
+      while (line.trains.length < line.fleetSize) line.trains.push(this.spacedTrain(line));
+    }
+    this.planner = createRoutePlanner(this.stations, this.lines);
+    for (const station of this.stations) {
+      for (const passenger of station.queue) {
+        passenger.route = [...(this.planner.findRoute(station.id, passenger.destination) ?? [])];
+      }
+    }
+    // Riders on other lines stay aboard. The engine replans them at their next arrival.
+  }
+}

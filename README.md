@@ -2,7 +2,11 @@
 
 A small, original urban-transit strategy game prototype. Build metro lines, connect stations, move passengers, manage capacity, and keep the network flowing.
 
-## Current release — v0.18.0 · Network control
+## Current release — v0.19.0 · Reliable startup and route editing
+
+Startup recovery now works even if the entry JavaScript is missing. A 20-second deadline prevents indefinite loading; retry requests fresh HTML, and late engine responses cannot dismiss a failed startup. The loading card remains readable without external CSS, keeps the menu inaccessible until ready and explains when JavaScript is disabled.
+
+Route edits, fleet dispatch and network reset now run through tested engine commands. Selecting an existing endpoint keeps the fleet moving. Passengers on other lines replan at their next arrival; a removed transfer leaves them waiting for reconnection instead of creating false deliveries.
 
 A map-led operations desk with larger type, readable touch controls, mobile panel navigation and a shared city preview. All fourteen stations, four editable lines, transfers, upgrades, optional audio and the five stadium shift phases remain available.
 
@@ -75,7 +79,15 @@ npm install --prefix /tmp/cityflow-qa-tools --no-save --package-lock=false playw
 PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/browser-smoke.mjs
 ```
 
-Start Vite before that command. Pass a different base URL as the first argument to test a static build served under `/metro/`. The check covers four viewports, asset responses, real canvas taps, grants, purchases, inspection, zoom/pan, DPR, restart and CSS failure recovery. Screenshots default to `/tmp/cityflow-qa`. See [QA notes](docs/QA_0.18.md) for observed results and limits.
+Start Vite before that command. Pass a different base URL as the first argument to test a static build served under `/metro/`. The check covers four viewports, asset responses, real canvas taps, grants, purchases, inspection, zoom/pan, DPR, restart and CSS failure recovery. Screenshots default to `/tmp/cityflow-qa`. See [latest QA notes](docs/QA_0.19.md) for observed results and limits.
+
+The startup failure suite targets a production build served under `/metro/`:
+
+```bash
+PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/loading-smoke.mjs http://127.0.0.1:4173/metro/
+```
+
+It tests slow/cached startup, missing entry/module/CSS, the real timeout, late responses after timeout, successful retry and JavaScript-disabled messaging.
 
 ## Project structure
 
@@ -85,6 +97,7 @@ Start Vite before that command. Pass a different base URL as the first argument 
 - `src/simulation/gameTypes.ts`: shared simulation entity types.
 - `src/mapViewport.ts`: uniform world/CSS transforms, zoom and pan.
 - `src/cityMap.ts`: shared fourteen-station metadata and fresh runtime station creation.
+- `src/simulation/networkCommands.ts`: route edits, fleet placement, dispatch budget and graph reset.
 - `src/simulation/runState.ts`: run counters and explicit reset.
 - `src/simulation/servicePlans.ts`: difficulty tuning and seeded district events.
 - `src/simulation/serviceContracts.ts`: optional grants, progress, deadlines and one-time rewards.

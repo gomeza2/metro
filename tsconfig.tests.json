@@ -22,6 +22,7 @@
     "src/mapViewport.ts",
     "src/simulation/serviceContracts.ts",
     "src/simulation/servicePlans.ts",
-    "src/simulation/runState.ts"
+    "src/simulation/runState.ts",
+    "src/simulation/networkCommands.ts"
   ]
 }

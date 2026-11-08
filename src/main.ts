@@ -5,7 +5,7 @@ import { MapViewport } from './mapViewport';
 import { createCityStations, CITY_STATIONS } from './cityMap';
 import { FixedStepClock } from './simulation/fixedStepClock';
 import { drawCityOverlay } from './visuals';
-import { createRoutePlanner } from './simulation/pathfinding';
+import { NetworkCommands, dispatchCost } from './simulation/networkCommands';
 import { nextStopIndex } from './simulation/trainMotion';
 import { GameSimulation } from './simulation/gameSimulation';
 import type { MetroLine, Station, StationKind, Train } from './simulation/gameTypes';
@@ -38,12 +38,11 @@ const lines: MetroLine[] = COLORS.map((color, index) => ({
 }));
 
 // Rebuilt only when a route changes; passenger spawning reuses the same graph snapshot.
-let routePlanner = createRoutePlanner(stations, lines);
+const network = new NetworkCommands(stations, lines);
 
 let selectedLine = 0;
 let focusedStation: Station | null = null;
 const simulationState = new RunState();
-let trainSequence = 1;
 const completedPhaseObjectives = new Set<number>();
 let servicePlan: ServicePlanId = 'standard';
 let eventSeed = Math.floor(Math.random() * 0x100000000);
@@ -87,7 +86,7 @@ const gameSimulation = new GameSimulation({
   stations,
   lines,
   state: simulationState,
-  getRoutePlanner: () => routePlanner,
+  getRoutePlanner: () => network.planner,
   isRunning: () => gameStarted && !paused && !gameOver,
   getCapacityLevel: () => capacityLevel,
   getExpressLevel: () => expressLevel,
@@ -103,84 +102,12 @@ const activeLines = () => lines.filter((line) => line.stations.length >= 2).leng
 const cityHour = () => Math.floor((8 * 60 + Math.floor(simulationState.elapsed * 2.2)) / 60) % 24;
 const capacityCost = () => 12 + (capacityLevel - 1) * 14;
 const expressCost = () => 10 + (expressLevel - 1) * 12;
-const dispatchCost = (line: MetroLine) => 18 + Math.max(0, line.fleetSize - 1) * 16;
+
 
 function nextTrainStop(line: MetroLine, train: Train): Station | null {
   const targetIndex = nextStopIndex(train.stationIndex, train.direction, line.stations.length);
   const id = targetIndex === null ? undefined : line.stations[targetIndex];
   return id ? stationById(id) : null;
-}
-
-function createTrain(line: MetroLine, stationIndex: number, direction: 1 | -1, dwell = 0.7): Train {
-  const stationId = line.stations[stationIndex];
-  if (!stationId) throw new Error('Cannot dispatch a train without a valid station.');
-  return {
-    id: trainSequence++,
-    lastStationId: stationId,
-    stationIndex,
-    direction,
-    progress: 0,
-    dwell,
-    passengers: [],
-  };
-}
-
-function createSpacedTrain(line: MetroLine): Train {
-  // Place each vehicle at the route position with the most space from the existing fleet.
-  let bestIndex = line.trains.length % 2 === 1 ? line.stations.length - 1 : 0;
-  let bestSpacing = -1;
-  for (let candidate = 0; candidate < line.stations.length; candidate += 1) {
-    const spacing = line.trains.length
-      ? Math.min(...line.trains.map((train) => Math.abs(candidate - (train.stationIndex + train.direction * train.progress))))
-      : line.stations.length;
-    if (spacing > bestSpacing) {
-      bestSpacing = spacing;
-      bestIndex = candidate;
-    }
-  }
-  const direction: 1 | -1 = line.trains.length % 2 === 0 ? -1 : 1;
-  return createTrain(line, bestIndex, direction, 1.1);
-}
-
-function resetFleet(line: MetroLine): void {
-  for (const train of line.trains) {
-    const returnStation = stations.find((station) => station.id === train.lastStationId);
-    returnStation?.queue.push(...train.passengers);
-  }
-  line.trains = [];
-  if (line.stations.length >= 2) {
-    line.trains.push(createTrain(line, 0, 1));
-    while (line.trains.length < line.fleetSize) line.trains.push(createSpacedTrain(line));
-  }
-}
-
-function dispatchTrain(line: MetroLine): void {
-  if (line.stations.length < 2 || line.fleetSize >= 3 || gameOver) return;
-  line.trains.push(createSpacedTrain(line));
-  line.fleetSize += 1;
-  $('#map-status').textContent = `${line.name.toUpperCase()} · ADDITIONAL TRAIN DISPATCHED`;
-  updateHUD();
-}
-
-function replanWaitingPassengers(): void {
-  for (const station of stations) {
-    for (const passenger of station.queue) {
-      passenger.route = [...(routePlanner.findRoute(station.id, passenger.destination) ?? [])];
-    }
-  }
-}
-
-function rebuildRoute(line: MetroLine): void {
-  const seen = new Set<string>();
-  line.stations = line.stations.filter((id) => {
-    if (seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  });
-  resetFleet(line);
-  routePlanner = createRoutePlanner(stations, lines);
-  replanWaitingPassengers();
-  updateHUD();
 }
 
 function updateStartHint(): void {
@@ -216,13 +143,12 @@ function addStationToSelectedLine(station: Station): void {
   }
   const line = lines[selectedLine];
   if (!line || gameOver) return;
-  const existingIndex = line.stations.indexOf(station.id);
-  if (existingIndex >= 0) {
-    line.stations = line.stations.slice(0, existingIndex + 1);
-  } else {
-    line.stations.push(station.id);
+  const result = network.selectStation(line.id, station.id);
+  if (result === 'invalid') {
+    $('#map-status').textContent = 'ROUTE UNAVAILABLE · SELECT A VALID STATION';
+    return;
   }
-  rebuildRoute(line);
+  updateHUD();
   focusedStation = station;
   updateStationInspector();
   updateStartHint();
@@ -234,8 +160,8 @@ function addStationToSelectedLine(station: Station): void {
 function undoRoute(): void {
   const line = lines[selectedLine];
   if (!line || !line.stations.length || gameOver) return;
-  line.stations.pop();
-  rebuildRoute(line);
+  network.undo(line.id);
+  updateHUD();
   updateStartHint();
   $('#map-status').textContent = line.stations.length >= 2
     ? `${line.name.toUpperCase()} · ROUTE UPDATED`
@@ -245,13 +171,13 @@ function undoRoute(): void {
 function clearRoute(): void {
   const line = lines[selectedLine];
   if (!line || gameOver || !line.stations.length) return;
-  line.stations = [];
-  rebuildRoute(line);
+  network.clear(line.id);
+  updateHUD();
   updateStartHint();
   $('#map-status').textContent = `${line.name.toUpperCase()} · READY TO BUILD`;
 }
 
-function contractSnapshot() { return { elapsed: simulationState.elapsed, score: simulationState.score, stations, lines, planner: routePlanner }; }
+function contractSnapshot() { return { elapsed: simulationState.elapsed, score: simulationState.score, stations, lines, planner: network.planner }; }
 function updateSimulation(dt: number): void {
   gameSimulation.step(dt);
   if (gameStarted && !paused && !gameOver) simulationState.credits += contracts.step(contractSnapshot());
@@ -937,21 +863,10 @@ function toggleSound(): void {
 }
 
 function restartGame(): void {
-  for (const station of stations) {
-    station.queue = [];
-    station.overload = 0;
-  }
-  for (const line of lines) {
-    line.stations = [];
-    line.trains = [];
-    line.fleetSize = 1;
-  }
-  // Restarting changes the network topology just like editing a route.
-  routePlanner = createRoutePlanner(stations, lines);
+  network.reset();
   selectedLine = 0;
   hintDismissed = false;
   focusedStation = null;
-  trainSequence = 1;
   simulationClock.reset();
   viewport.reset();
   simulationState.reset(SERVICE_PLANS[servicePlan].startingCredits);
@@ -1141,10 +1056,9 @@ $('#speed-button').addEventListener('click', () => {
 $('#dispatch-button').addEventListener('click', () => {
   const line = lines[selectedLine];
   if (!line || line.stations.length < 2 || line.fleetSize >= 3) return;
-  const cost = dispatchCost(line);
-  if (simulationState.credits < cost) return;
-  simulationState.credits -= cost;
-  dispatchTrain(line);
+  if (gameOver || !network.dispatch(line.id, simulationState)) return;
+  $('#map-status').textContent = `${line.name.toUpperCase()} · ADDITIONAL TRAIN DISPATCHED`;
+  updateHUD();
 });
 document.querySelectorAll<HTMLButtonElement>('.speed-button').forEach((button) => {
   button.addEventListener('click', () => {

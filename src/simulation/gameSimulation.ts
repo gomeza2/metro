@@ -184,8 +184,19 @@ export class GameSimulation {
   private arriveAtStation(line: MetroLine, train: Train, station: Station): void {
     this.normalizeTrainDirection(line, train);
     const next = this.nextTrainStop(line, train);
+    // Another line may have changed while this train was in transit. Replan
+    // from the actual arrival, never deliver somebody merely because a path vanished.
+    const arriving: Passenger[] = [];
+    for (const passenger of train.passengers) {
+      const route = this.options.getRoutePlanner().findRoute(station.id, passenger.destination);
+      if (!route && passenger.destination !== station.id) {
+        station.queue.push({ ...passenger, route: [] });
+      } else {
+        arriving.push({ ...passenger, route: [station.id, ...(route ?? [station.id])] });
+      }
+    }
     const result = resolvePassengersAtStation(
-      train.passengers,
+      arriving,
       station.id,
       next?.id ?? null,
     );

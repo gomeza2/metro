@@ -5,7 +5,7 @@ This document records the current boundaries and the order in which the original
 ## Current runtime
 
 - `src/boot.ts` loads the application module, reports startup progress, and displays a retry state if startup fails.
-- `src/main.ts` is still the application composition root. It composes a `RunState` counter object and still owns route/fleet editing, upgrades, UI flags, the update loop, DOM interaction, HUD coordination and Canvas render orchestration. It is smaller than before, but it is not yet a fully separated engine.
+- `src/main.ts` is still the application composition root. It composes `RunState`, `NetworkCommands` and `GameSimulation`; it still owns upgrades, UI flags, the update loop, DOM interaction, HUD coordination and Canvas render orchestration. It is smaller than before, but it is not yet a fully separated engine.
 - `src/simulation/pathfinding.ts` owns the transit graph snapshot and shortest-route planner.
 - `src/simulation/trainMotion.ts` owns pure train-direction and next-stop calculations.
 - `src/simulation/passengerDemand.ts` owns phase-aware trip weighting and injectable weighted candidate selection.
@@ -144,3 +144,12 @@ The release stylesheet `command.css` builds on the existing component styles. No
 `ServiceContracts` is DOM-free. Acceptance captures the delivery baseline and simulation timestamp. Only a live simulation tick can award a grant in the application. Deadlines are exclusive; a completion at the deadline expires. Completed or expired offers cannot be accepted again until reset. Coverage measures the largest connected component; hubs require three lines with at least two stops. The browser applies a returned reward exactly once. The five legacy phase missions retain their existing rewards.
 
 A five-minute deterministic scenario checks passenger conservation every tick through multi-line transfers, stadium delivery, all phase boundaries and clean reset. Browser QA exercises the composition and economy that pure engine tests cannot cover. Background Canvas rendering is suspended while the opaque main menu is open; resize uses an observer rather than a per-frame layout read. Full renderer extraction, real-device profiling and stronger route-command boundaries remain future work.
+
+
+## v0.19 — startup recovery and network commands
+
+A small inline recovery script runs before external CSS and modules. It owns the startup deadline, failure state, accessible retry and the final menu release. This deliberately stays in the HTML so a missing entry bundle cannot disable recovery. `boot.ts` verifies both stylesheet sentinels, waits for the actual engine-ready event, and races that work against the independent failure signal. Failure is terminal until reload: a late import may initialize behind the overlay but cannot reveal the menu. Progress is explicitly estimated, stops on failure and reaches 100% only after readiness. Retry preserves the route/hash and adds a fresh-HTML query. Listeners and animation callbacks are cleaned up. CSP changes must preserve the inline recovery script or provide an equivalent trusted bootstrap.
+
+`NetworkCommands` owns extension/trimming, Undo, Clear, planner replacement, fleet placement, dispatch debiting and full network reset. A no-op endpoint selection does not reset trains. Every topology edit returns riders from the edited fleet to their recorded last stops and replans all station queues. Other fleets retain their positions; `GameSimulation` replans onboard riders at their actual next arrival. A disconnected destination creates a waiting passenger with an empty route, never a delivery. Restoring an edge replans and rescues these passengers.
+
+The existing pure arrival helper retains its legacy empty-route behavior for compatibility; the engine filters disconnected arrivals before passing them to that helper. Route-command tests cover immutable planner snapshots, no-op identity, invalid inputs, passenger conservation, paid dispatch limits, reconnection and reset. Upgrade purchases, phase rewards and rendering extraction remain next; the architecture is still incremental.

@@ -9,13 +9,13 @@ const html = await readFile(resolve(distRoot, 'index.html'), 'utf8');
 
 function readAssetPath(tag, attribute, label) {
   assert.ok(tag, 'dist/index.html must include a compiled ' + label + ' asset');
-  const match = tag.match(new RegExp(attribute + '=["\\']([^"\\']+)["\\']', 'i'));
+  const match = tag.match(new RegExp(attribute + '="([^"]+)"', 'i'));
   assert.ok(match, label + ' tag must include its asset path');
   return match[1];
 }
 
-const stylesheetTag = html.match(/<link[^>]*\\.css[^>]*>/i);
-const scriptTag = html.match(/<script[^>]*\\.js[^>]*>/i);
+const stylesheetTag = html.match(/<link[^>]*\.css[^>]*>/i);
+const scriptTag = html.match(/<script[^>]*\.js[^>]*>/i);
 const stylesheetPath = readAssetPath(stylesheetTag, 'href', 'CSS stylesheet');
 const scriptPath = readAssetPath(scriptTag, 'src', 'JavaScript entry');
 

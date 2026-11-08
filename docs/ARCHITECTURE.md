@@ -12,6 +12,8 @@ This document records the current boundaries and the order in which the original
 - `src/simulation/shiftPhases.ts` is the single source of truth for phase IDs, boundaries, mission copy and current-phase lookup.
 - `src/simulation/passengerOperations.ts` owns pure boarding selection and arrival classification for continuing, transferring and delivered passengers.
 - `src/simulation/fixedStepClock.ts` converts variable render-frame deltas into bounded, fixed-size simulation updates.
+- `src/simulation/gameSimulation.ts` owns the DOM-free gameplay tick: passenger demand, train movement, boarding, arrivals, delivery rewards and overload detection.
+- `src/simulation/gameTypes.ts` defines the shared passenger, station, train, line and station-kind contracts.
 - `src/visuals.ts` owns the cached Port Azure city map, coastline, parks, roads, landmarks and animated water highlights.
 - `src/main.ts` draws interactive routes, station markers, deliberate station-label anchors, trains and gameplay overlays on top of the static city layer.
 - `src/style.css` owns the responsive interface and loading presentation.
@@ -65,6 +67,16 @@ Passenger demand selection is isolated from the game loop.
 
 Train movement helpers are pure functions. They calculate the direction appropriate for an endpoint and the next valid station index without changing a train object. The simulation update remains responsible for applying a direction change. Rendering may ask for the next stop without mutating gameplay state.
 
+### Game simulation engine
+
+`GameSimulation` owns the gameplay update and has no dependency on the DOM, Canvas, local storage or browser events.
+
+- The browser layer supplies station and line collections, the current route-planner snapshot, upgrade levels, and a mutable state contract for elapsed time, demand time, passenger IDs, score, credits and stadium counters.
+- `step(dt)` advances passenger demand, train dwell and travel, boarding, station arrivals, transfers, deliveries and overload pressure.
+- Passenger selection and arrival/boarding classification remain delegated to the smaller tested modules. The engine composes those rules and applies the resulting changes to the live run state.
+- The only presentation boundary is an overload callback. The browser handles the game-over screen and persistence; the engine itself never queries or updates HTML.
+- A route edit replaces the planner referenced by the browser-provided getter. The simulation therefore sees the same immutable graph snapshot used by passenger replanning.
+
 ### Fixed-step simulation clock
 
 `FixedStepClock` is independent of the browser and game state.
@@ -106,10 +118,10 @@ The GitHub Actions build workflow runs the tests first, then strict TypeScript c
 
 ## Next extraction sequence
 
-1. Extract the remaining simulation state and tick orchestration into a DOM-free `GameSimulation` module, using the fixed-step clock as its update boundary.
+1. Move ownership of the remaining run state into a dedicated simulation state object, then make restart and route-edit operations explicit engine commands rather than UI-side field mutations.
 2. Split Canvas rendering from interaction and presentation; add resize-aware backing-store management and profiling before adding more visual effects.
 3. Replace the static menu map's duplicated coordinate data with shared city-map metadata so future city changes cannot drift apart.
 4. Separate economy, events, and progression once their state contracts are clear.
-5. Add deterministic scenario tests for boarding, alighting, transfer handling, queue pressure, phase transitions, and restart behavior.
+5. Add deterministic end-to-end scenario tests for multi-line transfers, fleet spacing, phase rewards, and restart behavior.
 
 The next steps are deliberately ordered around correctness first. New cities, campaign progression, and larger passenger populations become much safer once these boundaries are in place.

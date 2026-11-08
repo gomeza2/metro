@@ -1,4 +1,12 @@
-## Current release — v0.15.0 — Visual clarity and map redesign
+## Current release — v0.16.0 — DOM-free simulation engine
+
+- Extracted the live gameplay tick into `src/simulation/gameSimulation.ts`, a module with no DOM, Canvas, browser storage or presentation imports.
+- The engine now owns passenger spawning, train movement, dwell and boarding, station arrivals, transfers, delivery rewards, stadium journey counters and overload detection.
+- The presentation layer supplies the current network snapshot, read/write run-state contract, upgrade levels and a single overload callback. Route edits remain visible through the current route-planner snapshot.
+- Moved the shared passenger, station, train and line types into `src/simulation/gameTypes.ts`.
+- Added deterministic simulation tests for run gating, invalid time, connected passenger creation, boarding, delivery, stadium journeys and overload pressure.
+
+## Previous release — v0.15.0 — Visual clarity and map redesign
 
 - Rebuilt the interface around a consistent high-contrast dark transit-console theme with a bright, readable map.
 - Replaced the loose city illustration with a more coherent Port Azure map: coastline, parks, main roads, a smaller set of landmarks and clearer district labels.

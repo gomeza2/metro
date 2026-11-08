@@ -2,27 +2,11 @@ import './style.css';
 import { FixedStepClock } from './simulation/fixedStepClock';
 import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
-import { directionForStation, nextStopIndex } from './simulation/trainMotion';
-import { selectPassengerTrip, type PassengerDistrictKind, type PassengerTripCandidate } from './simulation/passengerDemand';
+import { nextStopIndex } from './simulation/trainMotion';
+import { GameSimulation, type GameSimulationState } from './simulation/gameSimulation';
+import type { MetroLine, Station, StationKind, Train } from './simulation/gameTypes';
 import { getShiftPhase, getShiftPhaseIndex, SHIFT_PHASES } from './simulation/shiftPhases';
-import {
-  resolvePassengersAtStation,
-  selectPassengersForBoarding,
-} from './simulation/passengerOperations';
 
-type StationKind = PassengerDistrictKind;
-type Passenger = { id: number; origin: string; destination: string; route: string[] };
-type Station = {
-  id: string; name: string; x: number; y: number; kind: StationKind;
-  queue: Passenger[]; overload: number;
-};
-type Train = {
-  id: number; lastStationId: string; stationIndex: number; direction: 1 | -1; progress: number;
-  dwell: number; passengers: Passenger[];
-};
-type MetroLine = {
-  id: number; name: string; color: string; stations: string[]; trains: Train[]; fleetSize: number;
-};
 const WORLD_W = 1200;
 const WORLD_H = 760;
 const COLORS = ['#e47762', '#5d92bd', '#6a9c81', '#d5a14e'];
@@ -99,6 +83,36 @@ let hudClock = 0;
 let soundContext: AudioContext | null = null;
 let soundMaster: GainNode | null = null;
 
+// The browser layer owns these values; GameSimulation receives them through a
+// small mutable state contract and never reaches into the DOM.
+const simulationState: GameSimulationState = {
+  get passengerId() { return passengerId; },
+  set passengerId(value) { passengerId = value; },
+  get elapsed() { return elapsed; },
+  set elapsed(value) { elapsed = value; },
+  get demandClock() { return demandClock; },
+  set demandClock(value) { demandClock = value; },
+  get score() { return score; },
+  set score(value) { score = value; },
+  get credits() { return credits; },
+  set credits(value) { credits = value; },
+  get stadiumArrivalsDelivered() { return stadiumArrivalsDelivered; },
+  set stadiumArrivalsDelivered(value) { stadiumArrivalsDelivered = value; },
+  get stadiumDeparturesDelivered() { return stadiumDeparturesDelivered; },
+  set stadiumDeparturesDelivered(value) { stadiumDeparturesDelivered = value; },
+};
+
+const gameSimulation = new GameSimulation({
+  stations,
+  lines,
+  state: simulationState,
+  getRoutePlanner: () => routePlanner,
+  isRunning: () => gameStarted && !paused && !gameOver,
+  getCapacityLevel: () => capacityLevel,
+  getExpressLevel: () => expressLevel,
+  onOverload: endGame,
+});
+
 const stationById = (id: string) => stations.find((station) => station.id === id)!;
 const totalWaiting = () => stations.reduce((sum, station) => sum + station.queue.length, 0);
 const totalOnTrains = () => lines.reduce((sum, line) => sum + line.trains.reduce((fleet, train) => fleet + train.passengers.length, 0), 0);
@@ -107,10 +121,6 @@ const cityHour = () => Math.floor((8 * 60 + Math.floor(elapsed * 2.2)) / 60) % 2
 const capacityCost = () => 12 + (capacityLevel - 1) * 14;
 const expressCost = () => 10 + (expressLevel - 1) * 12;
 const dispatchCost = (line: MetroLine) => 18 + Math.max(0, line.fleetSize - 1) * 16;
-
-function normalizeTrainDirection(line: MetroLine, train: Train): void {
-  train.direction = directionForStation(train.stationIndex, train.direction, line.stations.length);
-}
 
 function nextTrainStop(line: MetroLine, train: Train): Station | null {
   const targetIndex = nextStopIndex(train.stationIndex, train.direction, line.stations.length);
@@ -258,124 +268,8 @@ function clearRoute(): void {
   $('#map-status').textContent = `${line.name.toUpperCase()} · READY TO BUILD`;
 }
 
-function spawnPassenger(): void {
-  const connected: PassengerTripCandidate<Station>[] = [];
-
-  for (const from of stations) {
-    if (from.queue.length >= 16) continue;
-
-    for (const to of stations) {
-      if (from.id === to.id || to.queue.length >= 16) continue;
-      const route = routePlanner.findRoute(from.id, to.id);
-      if (!route || route.length < 2) continue;
-
-      connected.push({
-        from: { id: from.id, kind: from.kind, queueLength: from.queue.length },
-        to: { id: to.id, kind: to.kind, queueLength: to.queue.length },
-        route,
-        payload: from,
-      });
-    }
-  }
-
-  const selected = selectPassengerTrip(connected, { elapsed, hour: cityHour() });
-  if (!selected) return;
-
-  selected.payload.queue.push({
-    id: passengerId++,
-    origin: selected.from.id,
-    destination: selected.to.id,
-    route: [...selected.route],
-  });
-}
-
-function boardPassengers(line: MetroLine, train: Train, station: Station): void {
-  const next = nextTrainStop(line, train);
-  if (!next) return;
-
-  const availableSeats = 6 * capacityLevel - train.passengers.length;
-  const result = selectPassengersForBoarding(
-    station.queue,
-    station.id,
-    next.id,
-    availableSeats,
-  );
-  if (!result.boarding.length) return;
-
-  station.queue = result.waiting;
-  train.passengers.push(...result.boarding);
-}
-
-function arriveAtStation(line: MetroLine, train: Train, station: Station): void {
-  normalizeTrainDirection(line, train);
-  const next = nextTrainStop(line, train);
-  const result = resolvePassengersAtStation(
-    train.passengers,
-    station.id,
-    next?.id ?? null,
-  );
-
-  for (const passenger of result.delivered) {
-    score += 1;
-    credits += 2;
-    if (passenger.destination === 'stadium') stadiumArrivalsDelivered += 1;
-    if (passenger.origin === 'stadium' && passenger.destination === station.id) {
-      stadiumDeparturesDelivered += 1;
-    }
-  }
-
-  if (result.transferring.length) station.queue.push(...result.transferring);
-  train.passengers = result.continuing;
-  boardPassengers(line, train, station);
-}
-
 function updateSimulation(dt: number): void {
-  if (!gameStarted || paused || gameOver || activeLines() === 0) return;
-  elapsed += dt;
-  demandClock += dt;
-  const spawnInterval = Math.max(1.7, 5.2 - elapsed / 150);
-  while (demandClock >= spawnInterval) {
-    demandClock -= spawnInterval;
-    spawnPassenger();
-    if (elapsed > 90 && Math.random() < 0.22) spawnPassenger();
-  }
-
-  for (const line of lines) {
-    if (line.stations.length < 2) continue;
-    for (const train of line.trains) {
-      normalizeTrainDirection(line, train);
-      if (train.dwell > 0) {
-        train.dwell = Math.max(0, train.dwell - dt);
-        if (train.dwell === 0) {
-          const currentId = line.stations[train.stationIndex];
-          if (currentId) boardPassengers(line, train, stationById(currentId));
-        }
-        continue;
-      }
-      const currentId = line.stations[train.stationIndex];
-      const next = nextTrainStop(line, train);
-      if (!currentId || !next) continue;
-      const current = stationById(currentId);
-      const distance = Math.hypot(next.x - current.x, next.y - current.y);
-      const travelUnitsPerSecond = 105 * expressLevel;
-      train.progress += (dt * travelUnitsPerSecond) / Math.max(1, distance);
-      if (train.progress >= 1) {
-        train.stationIndex += train.direction;
-        train.lastStationId = next.id;
-        train.progress = 0;
-        train.dwell = 0.45;
-        arriveAtStation(line, train, next);
-      }
-    }
-  }
-
-  for (const station of stations) {
-    if (station.queue.length > 12) station.overload += dt;
-    else station.overload = Math.max(0, station.overload - dt * 0.7);
-    if (station.overload >= 17) endGame(station);
-  }
-
-
+  gameSimulation.step(dt);
 }
 
 function endGame(station: Station): void {

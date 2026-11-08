@@ -2,7 +2,7 @@ import './style.css';
 import { FixedStepClock } from './simulation/fixedStepClock';
 import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
-import { directionForStation, nextStopIndex } from './simulation/trainMotion';
+import { nextStopIndex } from './simulation/trainMotion';
 import { GameSimulation, type GameSimulationState } from './simulation/gameSimulation';
 import type { MetroLine, Passenger, Station, StationKind, Train } from './simulation/gameTypes';
 import { getShiftPhase, getShiftPhaseIndex, SHIFT_PHASES } from './simulation/shiftPhases';

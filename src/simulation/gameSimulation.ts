@@ -98,13 +98,14 @@ export class GameSimulation {
       }
     }
 
+    let overloadHandled = false;
     for (const station of stations) {
       if (station.queue.length > 12) station.overload += dt;
       else station.overload = Math.max(0, station.overload - dt * 0.7);
 
-      if (station.overload >= 17) {
+      if (station.overload >= 17 && !overloadHandled) {
+        overloadHandled = true;
         this.options.onOverload(station);
-        return;
       }
     }
   }

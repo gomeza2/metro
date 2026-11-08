@@ -1,3 +1,4 @@
+import { districtEventAt, SERVICE_PLANS, type ServicePlanId } from './servicePlans.js';
 import type { RoutePlanner } from './pathfinding.js';
 import {
   selectPassengerTrip,
@@ -30,6 +31,8 @@ export interface GameSimulationOptions {
   getExpressLevel: () => number;
   onOverload: (station: Station) => void;
   random?: () => number;
+  getServicePlan?: () => ServicePlanId;
+  getEventSeed?: () => number;
 }
 
 /**
@@ -56,7 +59,8 @@ export class GameSimulation {
     state.elapsed += dt;
     state.demandClock += dt;
 
-    const spawnInterval = Math.max(1.7, 5.2 - state.elapsed / 150);
+    const plan = SERVICE_PLANS[this.options.getServicePlan?.() ?? 'standard'];
+    const spawnInterval = Math.max(1.7, 5.2 - state.elapsed / 150) / plan.demand;
     while (state.demandClock >= spawnInterval) {
       state.demandClock -= spawnInterval;
       this.spawnPassenger();
@@ -103,7 +107,7 @@ export class GameSimulation {
       if (station.queue.length > 12) station.overload += dt;
       else station.overload = Math.max(0, station.overload - dt * 0.7);
 
-      if (station.overload >= 17 && !overloadHandled) {
+      if (station.overload >= plan.overloadSeconds && !overloadHandled) {
         overloadHandled = true;
         this.options.onOverload(station);
       }
@@ -135,7 +139,7 @@ export class GameSimulation {
     const hour = Math.floor((8 * 60 + Math.floor(state.elapsed * 2.2)) / 60) % 24;
     const selected = selectPassengerTrip(
       connected,
-      { elapsed: state.elapsed, hour },
+      { elapsed: state.elapsed, hour, event: this.options.getEventSeed ? districtEventAt(state.elapsed, this.options.getEventSeed()) : null },
       this.random,
     );
     if (!selected) return;

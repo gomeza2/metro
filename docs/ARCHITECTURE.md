@@ -5,7 +5,7 @@ This document records the current boundaries and the order in which the original
 ## Current runtime
 
 - `src/boot.ts` loads the application module, reports startup progress, and displays a retry state if startup fails.
-- `src/main.ts` is still the application composition root. It currently owns the live game state, simulation update loop, DOM interaction, HUD coordination, and Canvas render orchestration. It is smaller than before, but it is not yet a fully separated engine.
+- `src/main.ts` is still the application composition root. It composes a `RunState` counter object and still owns route/fleet editing, upgrades, UI flags, the update loop, DOM interaction, HUD coordination and Canvas render orchestration. It is smaller than before, but it is not yet a fully separated engine.
 - `src/simulation/pathfinding.ts` owns the transit graph snapshot and shortest-route planner.
 - `src/simulation/trainMotion.ts` owns pure train-direction and next-stop calculations.
 - `src/simulation/passengerDemand.ts` owns phase-aware trip weighting and injectable weighted candidate selection.
@@ -133,3 +133,14 @@ The next steps are deliberately ordered around correctness first. New cities, ca
 `MapViewport` owns the uniform world-to-CSS transform and its inverse, bounded zoom (1–3×), cursor-anchored zoom and bounded panning. `ResizeObserver` sizes the backing store; DPR changes trigger a refresh. Hit testing uses the same inverse transform with a CSS-pixel minimum target. Pointer capture separates taps from drags and cancels incomplete gestures. Ordinary wheel scrolling remains page scrolling; Ctrl/Meta+wheel zooms. Fit restores full-city visibility. The station selector offers a keyboard alternative to spatial input.
 
 The release stylesheet `command.css` builds on the existing component styles. No fonts, images or mandatory services are downloaded at runtime. Browser validation covers both desktop and mobile; real-device touch testing remains outstanding.
+
+
+## v0.18 — service rules and run counters
+
+`RunState` implements the existing engine state contract. The browser and engine share one object; restart uses `reset(startingCredits)` rather than independent assignments. Route/fleet commands and upgrades remain in the composition root and are the next extraction, not a completed engine rewrite.
+
+`servicePlans.ts` is the source of truth for demand multipliers, rescue windows, initial budgets and ranked eligibility. The standard plan keeps the previous tuning. `GameSimulation` accepts optional plan/seed getters; existing callers retain default behavior. Event schedules use a per-shift seed and simulation time: 30–70 seconds, then 220–260 and every 100 seconds afterward. These windows avoid the original stadium phases. Candidate weights change only for connected trips, preserving routing invariants. Museum/university attract arrivals; harbor creates departures.
+
+`ServiceContracts` is DOM-free. Acceptance captures the delivery baseline and simulation timestamp. Only a live simulation tick can award a grant in the application. Deadlines are exclusive; a completion at the deadline expires. Completed or expired offers cannot be accepted again until reset. Coverage measures the largest connected component; hubs require three lines with at least two stops. The browser applies a returned reward exactly once. The five legacy phase missions retain their existing rewards.
+
+A five-minute deterministic scenario checks passenger conservation every tick through multi-line transfers, stadium delivery, all phase boundaries and clean reset. Browser QA exercises the composition and economy that pure engine tests cannot cover. Background Canvas rendering is suspended while the opaque main menu is open; resize uses an observer rather than a per-frame layout read. Full renderer extraction, real-device profiling and stronger route-command boundaries remain future work.

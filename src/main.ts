@@ -1,10 +1,13 @@
+import { RunState } from './simulation/runState';
+import { CONTRACTS, ServiceContracts, type ContractId } from './simulation/serviceContracts';
+import { SERVICE_PLANS, districtEventAt, type ServicePlanId } from './simulation/servicePlans';
 import { MapViewport } from './mapViewport';
 import { createCityStations, CITY_STATIONS } from './cityMap';
 import { FixedStepClock } from './simulation/fixedStepClock';
 import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
 import { nextStopIndex } from './simulation/trainMotion';
-import { GameSimulation, type GameSimulationState } from './simulation/gameSimulation';
+import { GameSimulation } from './simulation/gameSimulation';
 import type { MetroLine, Station, StationKind, Train } from './simulation/gameTypes';
 import { getShiftPhase, getShiftPhaseIndex, SHIFT_PHASES } from './simulation/shiftPhases';
 
@@ -39,19 +42,16 @@ let routePlanner = createRoutePlanner(stations, lines);
 
 let selectedLine = 0;
 let focusedStation: Station | null = null;
-let passengerId = 1;
+const simulationState = new RunState();
 let trainSequence = 1;
-let elapsed = 0;
-let demandClock = 0;
-let score = 0;
-let credits = 28;
-let stadiumArrivalsDelivered = 0;
-let stadiumDeparturesDelivered = 0;
 const completedPhaseObjectives = new Set<number>();
-const BEST_SCORE_KEY = 'cityflow.bestScore.v1';
+let servicePlan: ServicePlanId = 'standard';
+let eventSeed = Math.floor(Math.random() * 0x100000000);
+const contracts = new ServiceContracts();
+const bestScoreKey = () => servicePlan === 'standard' ? 'cityflow.bestScore.v1' : `cityflow.bestScore.${servicePlan}.v1`;
 function readBestScore(): number {
   try {
-    const stored = Number(localStorage.getItem(BEST_SCORE_KEY) ?? 0);
+    const stored = Number(localStorage.getItem(bestScoreKey()) ?? 0);
     return Number.isFinite(stored) && stored > 0 ? Math.floor(stored) : 0;
   } catch {
     return 0;
@@ -82,24 +82,6 @@ let hudClock = 0;
 let soundContext: AudioContext | null = null;
 let soundMaster: GainNode | null = null;
 
-// The browser layer owns these values; GameSimulation receives them through a
-// small mutable state contract and never reaches into the DOM.
-const simulationState: GameSimulationState = {
-  get passengerId() { return passengerId; },
-  set passengerId(value) { passengerId = value; },
-  get elapsed() { return elapsed; },
-  set elapsed(value) { elapsed = value; },
-  get demandClock() { return demandClock; },
-  set demandClock(value) { demandClock = value; },
-  get score() { return score; },
-  set score(value) { score = value; },
-  get credits() { return credits; },
-  set credits(value) { credits = value; },
-  get stadiumArrivalsDelivered() { return stadiumArrivalsDelivered; },
-  set stadiumArrivalsDelivered(value) { stadiumArrivalsDelivered = value; },
-  get stadiumDeparturesDelivered() { return stadiumDeparturesDelivered; },
-  set stadiumDeparturesDelivered(value) { stadiumDeparturesDelivered = value; },
-};
 
 const gameSimulation = new GameSimulation({
   stations,
@@ -110,13 +92,15 @@ const gameSimulation = new GameSimulation({
   getCapacityLevel: () => capacityLevel,
   getExpressLevel: () => expressLevel,
   onOverload: endGame,
+  getServicePlan: () => servicePlan,
+  getEventSeed: () => eventSeed,
 });
 
 const stationById = (id: string) => stations.find((station) => station.id === id)!;
 const totalWaiting = () => stations.reduce((sum, station) => sum + station.queue.length, 0);
 const totalOnTrains = () => lines.reduce((sum, line) => sum + line.trains.reduce((fleet, train) => fleet + train.passengers.length, 0), 0);
 const activeLines = () => lines.filter((line) => line.stations.length >= 2).length;
-const cityHour = () => Math.floor((8 * 60 + Math.floor(elapsed * 2.2)) / 60) % 24;
+const cityHour = () => Math.floor((8 * 60 + Math.floor(simulationState.elapsed * 2.2)) / 60) % 24;
 const capacityCost = () => 12 + (capacityLevel - 1) * 14;
 const expressCost = () => 10 + (expressLevel - 1) * 12;
 const dispatchCost = (line: MetroLine) => 18 + Math.max(0, line.fleetSize - 1) * 16;
@@ -267,8 +251,10 @@ function clearRoute(): void {
   $('#map-status').textContent = `${line.name.toUpperCase()} · READY TO BUILD`;
 }
 
+function contractSnapshot() { return { elapsed: simulationState.elapsed, score: simulationState.score, stations, lines, planner: routePlanner }; }
 function updateSimulation(dt: number): void {
   gameSimulation.step(dt);
+  if (gameStarted && !paused && !gameOver) simulationState.credits += contracts.step(contractSnapshot());
 }
 
 function endGame(station: Station): void {
@@ -276,12 +262,12 @@ function endGame(station: Station): void {
   gameOver = true;
   paused = true;
   $('#game-over-copy').textContent = `${station.name} stayed overcrowded for too long. The city needs more capacity or a better connection.`;
-  const newRecord = score > bestScore;
+  const newRecord = SERVICE_PLANS[servicePlan].ranked && simulationState.score > bestScore;
   if (newRecord) {
-    bestScore = score;
-    try { localStorage.setItem(BEST_SCORE_KEY, String(bestScore)); } catch { /* Score remains available for this session. */ }
+    bestScore = simulationState.score;
+    try { localStorage.setItem(bestScoreKey(), String(bestScore)); } catch { /* Score remains available for this session. */ }
   }
-  $('#final-score').textContent = String(score).padStart(3, '0');
+  $('#final-score').textContent = String(simulationState.score).padStart(3, '0');
   $('#final-best').textContent = String(bestScore).padStart(3, '0');
   $('#final-phases').textContent = `${completedPhaseObjectives.size} / 5`;
   $('#record-state').textContent = newRecord ? 'NEW PERSONAL BEST' : `PERSONAL BEST · ${String(bestScore).padStart(3, '0')}`;
@@ -350,7 +336,7 @@ const STATION_LABEL_LAYOUT: Record<string, { dx: number; dy: number; anchor: Sta
   airport: { dx: -8, dy: -32, anchor: 'center' },
 };
 
-function drawStation(station: Station): void {
+function drawStation(station: Station, eventTarget = false): void {
   const connectedLines = lines.filter((line) => line.stations.includes(station.id));
   const selected = lines[selectedLine]?.stations.includes(station.id) ?? false;
   const focused = focusedStation?.id === station.id;
@@ -386,6 +372,10 @@ function drawStation(station: Station): void {
     ctx.stroke();
   }
 
+  if (eventTarget) {
+    ctx.save(); ctx.beginPath(); ctx.arc(station.x, station.y, radius + 18, 0, Math.PI * 2);
+    ctx.strokeStyle = '#b97a2c'; ctx.lineWidth = 3; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.restore();
+  }
   // White marker, district-color ring and dark center stay readable over every district.
   ctx.save();
   ctx.shadowColor = 'rgba(35,54,41,.22)';
@@ -449,7 +439,7 @@ function drawStation(station: Station): void {
 
   if (station.overload > 0) {
     ctx.beginPath();
-    ctx.arc(station.x, station.y, 20, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(station.overload / 17, 1));
+    ctx.arc(station.x, station.y, 20, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(station.overload / SERVICE_PLANS[servicePlan].overloadSeconds, 1));
     ctx.strokeStyle = '#d66f5d';
     ctx.lineWidth = 3.5;
     ctx.stroke();
@@ -579,7 +569,7 @@ function render(): void {
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale,
     dpr * (viewport.width / 2 - viewport.x * scale), dpr * (viewport.height / 2 - viewport.y * scale));
   drawBackground();
-  drawCityOverlay(ctx, elapsed);
+  drawCityOverlay(ctx, simulationState.elapsed);
   for (const line of lines) drawLine(line);
   const endpoint = lines[selectedLine]?.stations.at(-1);
   if (routeEditMode && hoveredStation && endpoint && endpoint !== hoveredStation.id) {
@@ -587,7 +577,8 @@ function render(): void {
     ctx.save(); ctx.setLineDash([8, 8]); ctx.strokeStyle = lines[selectedLine]!.color; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(hoveredStation.x, hoveredStation.y); ctx.stroke(); ctx.restore();
   }
-  for (const station of stations) drawStation(station);
+  const districtEvent = districtEventAt(simulationState.elapsed, eventSeed);
+  for (const station of stations) drawStation(station, districtEvent?.stationId === station.id);
   for (const line of lines) {
     for (const train of line.trains) drawTrain(line, train);
   }
@@ -595,11 +586,11 @@ function render(): void {
 
 function getPhaseGoal(index: number): { current: number; target: number } {
   switch (index) {
-    case 0: return { current: score, target: 5 };
+    case 0: return { current: simulationState.score, target: 5 };
     case 1: return { current: lines.some((line) => line.stations.includes('stadium')) ? 1 : 0, target: 1 };
-    case 2: return { current: stadiumArrivalsDelivered, target: 5 };
-    case 3: return { current: stadiumDeparturesDelivered, target: 5 };
-    default: return { current: score, target: 55 };
+    case 2: return { current: simulationState.stadiumArrivalsDelivered, target: 5 };
+    case 3: return { current: simulationState.stadiumDeparturesDelivered, target: 5 };
+    default: return { current: simulationState.score, target: 55 };
   }
 }
 
@@ -610,7 +601,7 @@ function updatePhaseMission(phaseIndex: number): void {
   const nowComplete = goal.current >= goal.target;
   if (!completed && nowComplete && gameStarted && !gameOver) {
     completedPhaseObjectives.add(phaseIndex);
-    credits += PHASE_REWARD;
+    simulationState.credits += PHASE_REWARD;
     $('#map-status').textContent = `PHASE GOAL COMPLETE · +${PHASE_REWARD} REWARD`;
   }
   const claimed = completedPhaseObjectives.has(phaseIndex);
@@ -619,7 +610,7 @@ function updatePhaseMission(phaseIndex: number): void {
   $('#phase-goal').textContent = phase.goal;
   $('#phase-state').textContent = claimed ? 'CLEARED' : 'IN PROGRESS';
   $('#phase-state').classList.toggle('is-complete', claimed);
-  $('#phase-progress').setAttribute('style', `width:${Math.min(100, (Math.max(0, elapsed - phase.start) / (phase.end - phase.start)) * 100)}%`);
+  $('#phase-progress').setAttribute('style', `width:${Math.min(100, (Math.max(0, simulationState.elapsed - phase.start) / (phase.end - phase.start)) * 100)}%`);
   $('#phase-count').textContent = `PHASE ${String(phaseIndex + 1).padStart(2, '0')} / 05`;
   $('#mission-progress-label').textContent = `${Math.min(goal.current, goal.target)} / ${goal.target}`;
   $('#mission-progress-bar').setAttribute('style', `width:${Math.min(100, (goal.current / goal.target) * 100)}%`);
@@ -637,7 +628,7 @@ type CityEventPresentation = {
 let lastDisplayedCityEvent: string | null = null;
 
 function updateCityEvent(): void {
-  const phase = getShiftPhase(elapsed);
+  const phase = getShiftPhase(simulationState.elapsed);
   let event: CityEventPresentation;
 
   switch (phase.id) {
@@ -696,6 +687,14 @@ function updateCityEvent(): void {
       break;
   }
 
+  const districtEvent = districtEventAt(simulationState.elapsed, eventSeed);
+  const nextDistrictEvent = districtEventAt(simulationState.elapsed + 15, eventSeed);
+  if (districtEvent) {
+    event = { key: `${districtEvent.id}-${Math.ceil(districtEvent.end - simulationState.elapsed)}`, title: districtEvent.name,
+      copy: districtEvent.description, state: `${Math.ceil(districtEvent.end - simulationState.elapsed)}s LEFT`, tip: 'Extra demand only appears on connected trips. A direct service or an interchange can help.' };
+  } else if (nextDistrictEvent && simulationState.elapsed < nextDistrictEvent.start) {
+    event = { key: `soon-${nextDistrictEvent.id}-${Math.ceil(nextDistrictEvent.start - simulationState.elapsed)}`, title: `Next: ${nextDistrictEvent.name}`, copy: nextDistrictEvent.description, state: `${Math.ceil(nextDistrictEvent.start - simulationState.elapsed)}s AWAY`, tip: 'Prepare service before the district event begins.' };
+  }
   if (event.key === lastDisplayedCityEvent) return;
   lastDisplayedCityEvent = event.key;
   $('#event-title').textContent = event.title;
@@ -705,9 +704,12 @@ function updateCityEvent(): void {
 }
 
 function updateHUD(): void {
-  $('#score').textContent = String(score).padStart(3, '0');
-  $('#best-score').textContent = String(bestScore).padStart(3, '0');
-  const phaseIndex = getShiftPhaseIndex(elapsed);
+  $('#network-summary').textContent = `$${simulationState.credits} funds · ${simulationState.score} delivered · ${totalWaiting()} waiting`;
+  updateContracts();
+  $('#service-plan-label').textContent = SERVICE_PLANS[servicePlan].name;
+  $('#score').textContent = String(simulationState.score).padStart(3, '0');
+  $('#best-score').textContent = SERVICE_PLANS[servicePlan].ranked ? String(bestScore).padStart(3, '0') : 'FREE';
+  const phaseIndex = getShiftPhaseIndex(simulationState.elapsed);
   updatePhaseMission(phaseIndex);
   updateCityEvent();
   $('#in-transit').textContent = String(totalOnTrains());
@@ -716,10 +718,10 @@ function updateHUD(): void {
   const selectedFleet = lines[selectedLine];
   $('#fleet-state').textContent = selectedFleet ? `Fleet · ${selectedFleet.fleetSize}/3 trains` : 'Fleet · 0/3 trains';
   $('#dispatch-cost').textContent = selectedFleet && selectedFleet.fleetSize < 3 ? '$' + String(dispatchCost(selectedFleet)) : 'MAX';
-  $('#credits').textContent = '$' + String(credits);
+  $('#credits').textContent = '$' + String(simulationState.credits);
   $('.capacity-cost').textContent = capacityLevel >= 3 ? 'MAX' : '$' + String(capacityCost());
   $('.express-cost').textContent = expressLevel >= 3 ? 'MAX' : '$' + String(expressCost());
-  const minutes = 8 * 60 + Math.floor(elapsed * 2.2);
+  const minutes = 8 * 60 + Math.floor(simulationState.elapsed * 2.2);
   $('#city-time').textContent = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
   const connected = activeLines() > 0;
   const queueTotal = totalWaiting();
@@ -729,12 +731,12 @@ function updateHUD(): void {
   $('#flow-note').textContent = !connected ? 'Connect stations to begin moving passengers.' : `${queueTotal} passengers are waiting across the network.`;
   $('#capacity-state').textContent = `Train capacity ×${capacityLevel}`;
   $('#express-state').textContent = `Train speed ×${expressLevel}`;
-  $<HTMLButtonElement>('#capacity-button').disabled = gameOver || capacityLevel >= 3 || credits < capacityCost();
-  $<HTMLButtonElement>('#speed-button').disabled = gameOver || expressLevel >= 3 || credits < expressCost();
-  $<HTMLButtonElement>('#dispatch-button').disabled = gameOver || !selectedFleet || selectedFleet.stations.length < 2 || selectedFleet.fleetSize >= 3 || credits < dispatchCost(selectedFleet);
-  $('#capacity-button').classList.toggle('maxed', capacityLevel >= 3 || credits < capacityCost());
-  $('#speed-button').classList.toggle('maxed', expressLevel >= 3 || credits < expressCost());
-  $('#dispatch-button').classList.toggle('maxed', !selectedFleet || selectedFleet.stations.length < 2 || selectedFleet.fleetSize >= 3 || credits < dispatchCost(selectedFleet));
+  $<HTMLButtonElement>('#capacity-button').disabled = gameOver || capacityLevel >= 3 || simulationState.credits < capacityCost();
+  $<HTMLButtonElement>('#speed-button').disabled = gameOver || expressLevel >= 3 || simulationState.credits < expressCost();
+  $<HTMLButtonElement>('#dispatch-button').disabled = gameOver || !selectedFleet || selectedFleet.stations.length < 2 || selectedFleet.fleetSize >= 3 || simulationState.credits < dispatchCost(selectedFleet);
+  $('#capacity-button').classList.toggle('maxed', capacityLevel >= 3 || simulationState.credits < capacityCost());
+  $('#speed-button').classList.toggle('maxed', expressLevel >= 3 || simulationState.credits < expressCost());
+  $('#dispatch-button').classList.toggle('maxed', !selectedFleet || selectedFleet.stations.length < 2 || selectedFleet.fleetSize >= 3 || simulationState.credits < dispatchCost(selectedFleet));
   updateStationInspector();
   const modeButton = $('#map-mode-button');
   modeButton.classList.toggle('inspect-mode', !routeEditMode);
@@ -753,6 +755,9 @@ function updateHUD(): void {
 
 function updateStationInspector(): void {
   const station = focusedStation;
+  $<HTMLSelectElement>('#station-access').value = station?.id ?? '';
+  $('#station-connect').textContent = routeEditMode ? 'Select on current line' : 'Inspect selected station';
+  $<HTMLButtonElement>('#station-connect').disabled = !station || !gameStarted || gameOver;
   if (!station) {
     $('#station-icon').textContent = '⌖';
     $('#station-name').textContent = 'Select a station';
@@ -780,7 +785,7 @@ function updateStationInspector(): void {
   $('#station-kind').textContent = labels[station.kind];
   $('#station-queue').textContent = String(station.queue.length);
   $('#station-lines').textContent = servedBy.length ? servedBy.map((line) => String(line.id + 1).padStart(2, '0')).join(' · ') : 'None';
-  $('#station-pressure').textContent = pressure;
+  $('#station-pressure').textContent = station.overload > 0 && SERVICE_PLANS[servicePlan].ranked ? `${pressure} · ${Math.max(0, Math.ceil(SERVICE_PLANS[servicePlan].overloadSeconds - station.overload))}s TO RESCUE` : pressure;
   $('#station-pressure').setAttribute('data-pressure', pressure.toLowerCase());
   const advice: Record<StationKind, string> = {
     residential: 'Residential trips concentrate around the morning departure and evening return. Make sure this district has useful connections in both directions.',
@@ -807,10 +812,14 @@ function selectLine(index: number): void {
 
 function startGame(): void {
   gameStarted = true;
+  $<HTMLSelectElement>('#service-plan').disabled = true;
   paused = false;
   document.body.classList.remove('menu-active');
   $('#main-menu').classList.add('is-closed');
   $('#main-menu').setAttribute('aria-hidden', 'true');
+  $('#main-menu').setAttribute('inert', '');
+  $('.layout').removeAttribute('inert');
+  $('.topbar').removeAttribute('inert');
   $('#map-status').textContent = 'CLOCK ON HOLD · CONNECT TWO STATIONS TO START THE SHIFT';
   lastFrame = 0;
   updateHUD();
@@ -822,13 +831,16 @@ function openMainMenu(): void {
   document.body.classList.add('menu-active');
   $('#main-menu').classList.remove('is-closed');
   $('#main-menu').setAttribute('aria-hidden', 'false');
+  $('#main-menu').removeAttribute('inert');
+  $('.layout').setAttribute('inert', '');
+  $('.topbar').setAttribute('inert', '');
   $('#start-game').querySelector('b')!.textContent = 'Resume your shift';
 }
 
 function togglePause(): void {
   if (gameOver) return;
   paused = !paused;
-  $('#pause-button').innerHTML = paused ? '<span>▶</span> Resume' : '<span>Ⅱ</span> Pause';
+  $('#pause-button').innerHTML = paused ? '<span>▶</span> Resume' : '<span aria-hidden="true">II</span> Pause';
   $('#map-status').textContent = paused ? 'SIMULATION PAUSED' : 'NETWORK RUNNING';
 }
 
@@ -843,7 +855,7 @@ const SOUNDTRACK_PHASES = [
 function scheduleSoundtrackStep(): void {
   if (!soundOn || !soundContext || !soundMaster) return;
 
-  const phaseIndex = getShiftPhaseIndex(elapsed);
+  const phaseIndex = getShiftPhaseIndex(simulationState.elapsed);
   const mood = SOUNDTRACK_PHASES[phaseIndex] ?? SOUNDTRACK_PHASES[0];
   const pressure = Math.max(0, Math.min(1, totalWaiting() / 34));
   const semitone = mood.notes[soundStep % mood.notes.length] ?? 0;
@@ -939,16 +951,12 @@ function restartGame(): void {
   selectedLine = 0;
   hintDismissed = false;
   focusedStation = null;
-  passengerId = 1;
   trainSequence = 1;
-  elapsed = 0;
-  demandClock = 0;
   simulationClock.reset();
   viewport.reset();
-  score = 0;
-  credits = 28;
-  stadiumArrivalsDelivered = 0;
-  stadiumDeparturesDelivered = 0;
+  simulationState.reset(SERVICE_PLANS[servicePlan].startingCredits);
+  contracts.reset();
+  eventSeed = Math.floor(Math.random() * 0x100000000);
   completedPhaseObjectives.clear();
   lastDisplayedCityEvent = null;
   paused = false;
@@ -959,8 +967,9 @@ function restartGame(): void {
   gameStarted = true;
   routeEditMode = true;
   $('#game-over').classList.add('hidden');
+  startGame();
   updateStartHint();
-  $('#pause-button').innerHTML = '<span>Ⅱ</span> Pause';
+  $('#pause-button').innerHTML = '<span aria-hidden="true">II</span> Pause';
   $('#event-title').textContent = 'Morning commute';
   $('#event-copy').textContent = 'The city is starting its day.';
   $('#phase-name').textContent = SHIFT_PHASES[0]!.name;
@@ -978,7 +987,7 @@ function gameLoop(timestamp: number): void {
   simulationClock.advance(frameDelta, simulationSpeed, (stepSeconds) => {
     updateSimulation(stepSeconds);
   });
-  render();
+  if (!document.body.classList.contains('menu-active')) render();
 
   // Canvas remains smooth at display refresh rate; DOM-heavy HUD work runs at ~7 Hz.
   hudClock += Math.min(frameDelta, 0.05);
@@ -1045,13 +1054,61 @@ $('#station-connect').addEventListener('click', () => {
   if (focusedStation) addStationToSelectedLine(focusedStation);
 });
 
+document.querySelectorAll<HTMLButtonElement>('[data-panel]').forEach(button => button.addEventListener('click', () => {
+  $('.side-panel').dataset.mobilePanel = button.dataset.panel;
+  document.querySelectorAll<HTMLButtonElement>('[data-panel]').forEach(tab => tab.setAttribute('aria-pressed', String(tab === button)));
+}));
+$('#service-plan').addEventListener('change', () => {
+  if (gameStarted) return;
+  const selected = $<HTMLSelectElement>('#service-plan').value as ServicePlanId;
+  if (!(selected in SERVICE_PLANS)) return;
+  servicePlan = selected;
+  simulationState.credits = SERVICE_PLANS[servicePlan].startingCredits;
+  bestScore = readBestScore();
+  $('#service-plan-description').textContent = SERVICE_PLANS[servicePlan].description;
+  updateHUD();
+});
+$('#new-shift').addEventListener('click', () => {
+  if (gameStarted && !gameOver && !window.confirm('End this shift and choose a new service plan? Current routes and progress will be reset.')) return;
+  restartGame();
+  gameStarted = false;
+  paused = true;
+  $<HTMLSelectElement>('#service-plan').disabled = false;
+  document.body.classList.add('menu-active');
+  $('#main-menu').classList.remove('is-closed');
+  $('#main-menu').setAttribute('aria-hidden', 'false');
+  $('#main-menu').removeAttribute('inert');
+  $('.layout').setAttribute('inert', '');
+  $('.topbar').setAttribute('inert', '');
+  $('#main-menu').removeAttribute('inert');
+  $('.layout').setAttribute('inert', '');
+  $('.topbar').setAttribute('inert', '');
+  $('#start-game').querySelector('b')!.textContent = 'Start a new shift';
+});
+$('#contract-offers').addEventListener('click', event => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-contract]');
+  if (button && gameStarted && !gameOver) { contracts.accept(button.dataset.contract as ContractId, contractSnapshot()); updateContracts(); }
+});
+function updateContracts(): void {
+  const active = contracts.active;
+  const contract = CONTRACTS.find(item => item.id === active?.id);
+  $('#contract-status').textContent = active && contract
+    ? `${contract.title} · ${Math.min(contracts.progress(contractSnapshot()), contract.target)} / ${contract.target} · ${Math.max(0, Math.ceil(active.started + contract.seconds - simulationState.elapsed))}s left`
+    : contracts.lastResult;
+  $('#grant-count').textContent = `${contracts.completed.size} / ${CONTRACTS.length} EARNED`;
+  document.querySelectorAll<HTMLButtonElement>('[data-contract]').forEach(button => {
+    const id = button.dataset.contract as ContractId;
+    button.disabled = !gameStarted || gameOver || !!active || contracts.attempted.has(id);
+    button.classList.toggle('is-complete', contracts.completed.has(id));
+  });
+}
 $('#map-mode-button').addEventListener('click', () => {
   routeEditMode = !routeEditMode;
   $('#map-status').textContent = routeEditMode ? 'ROUTE EDITING · SELECT STATIONS TO CONNECT' : 'INSPECTION MODE · SELECT A STATION TO VIEW';
   updateHUD();
 });
 document.addEventListener('keydown', (event) => {
-  if (event.key.toLowerCase() === 'i' && !event.repeat && !['INPUT','TEXTAREA'].includes((event.target as HTMLElement).tagName)) {
+  if (event.key.toLowerCase() === 'i' && !event.repeat && !['INPUT','TEXTAREA','SELECT'].includes((event.target as HTMLElement).tagName)) {
     routeEditMode = !routeEditMode;
     $('#map-status').textContent = routeEditMode ? 'ROUTE EDITING · SELECT STATIONS TO CONNECT' : 'INSPECTION MODE · SELECT A STATION TO VIEW';
     updateHUD();
@@ -1066,16 +1123,16 @@ $('#clear-button').addEventListener('click', clearRoute);
 $('#pause-button').addEventListener('click', togglePause);
 $('#sound-button').addEventListener('click', toggleSound);
 $('#capacity-button').addEventListener('click', () => {
-  if (capacityLevel < 3 && credits >= capacityCost()) {
-    credits -= capacityCost();
+  if (capacityLevel < 3 && simulationState.credits >= capacityCost()) {
+    simulationState.credits -= capacityCost();
     capacityLevel += 1;
     $('#map-status').textContent = 'FLEET UPGRADED · MORE PASSENGER CAPACITY';
   }
   updateHUD();
 });
 $('#speed-button').addEventListener('click', () => {
-  if (expressLevel < 3 && credits >= expressCost()) {
-    credits -= expressCost();
+  if (expressLevel < 3 && simulationState.credits >= expressCost()) {
+    simulationState.credits -= expressCost();
     expressLevel += 1;
     $('#map-status').textContent = 'EXPRESS SERVICE INSTALLED · FASTER TRAINS';
   }
@@ -1085,8 +1142,8 @@ $('#dispatch-button').addEventListener('click', () => {
   const line = lines[selectedLine];
   if (!line || line.stations.length < 2 || line.fleetSize >= 3) return;
   const cost = dispatchCost(line);
-  if (credits < cost) return;
-  credits -= cost;
+  if (simulationState.credits < cost) return;
+  simulationState.credits -= cost;
   dispatchTrain(line);
 });
 document.querySelectorAll<HTMLButtonElement>('.speed-button').forEach((button) => {
@@ -1109,7 +1166,7 @@ $('#dismiss-hint').addEventListener('click', () => { hintDismissed = true; $('#s
 $('#restart-button').addEventListener('click', restartGame);
 $('.brand').addEventListener('click', (event) => { event.preventDefault(); openMainMenu(); });
 window.addEventListener('keydown', (event) => {
-  if (event.code === 'Space' && !(event.target instanceof HTMLButtonElement)) {
+  if (event.code === 'Space' && gameStarted && !['BUTTON','INPUT','TEXTAREA','SELECT','A'].includes((event.target as HTMLElement).tagName)) {
     event.preventDefault();
     togglePause();
   }

@@ -19,6 +19,9 @@
     "src/simulation/fixedStepClock.ts",
     "src/simulation/gameTypes.ts",
     "src/simulation/gameSimulation.ts",
-    "src/mapViewport.ts"
+    "src/mapViewport.ts",
+    "src/simulation/serviceContracts.ts",
+    "src/simulation/servicePlans.ts",
+    "src/simulation/runState.ts"
   ]
 }

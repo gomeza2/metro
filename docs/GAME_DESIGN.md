@@ -201,3 +201,27 @@ Spotify should be treated as an optional external listening destination, not a r
 ## v0.18 — Network control presentation
 
 The map is the primary workspace, with line selection above it and playback next to the city title. The warmer paper map contrasts with a navy operations desk. Larger typography and touch controls replace tiny decorative labels. Zoom/pan and a keyboard station selector preserve access to all fourteen stations at small widths. Preview routes show the next hovered connection before editing.
+
+
+## v0.18 — service plans, district events and grants
+
+Difficulty is a service-plan decision before a shift. Gentle shifts offer time and budget to learn; rush hour increases pressure; free build removes overload defeat while retaining passengers, economy and upgrades. Select New shift to change plans; resuming keeps the current plan. Ranked records are isolated by plan so gentler rules cannot overwrite the original record.
+
+City grants create optional decisions without taking away the original phase goals. Reliable service pays $18 for ten **new** deliveries within 75 simulation seconds. Citywide access pays $14 for one eight-station component within 60 seconds. Transfer hub pays $12 for three active lines at one station within 60 seconds. One grant may be active; each has one attempt per shift. No entry cost or penalty is charged. Pausing stops deadlines. There are no permanent unlocks yet.
+
+Museum openings, ferry arrivals and university open days vary the focus of a shift. They change relative trip weights by 5× at the relevant connected district, not global volume. An advance notice lets players prepare, and an amber ring marks the affected station. The stadium's established arrival/return sequence is preserved.
+
+## Development roadmap after v0.18
+
+- [x] Build identity and readable recovery when stylesheet loading fails.
+- [x] Map-led interface, shared menu geography and mobile panel navigation.
+- [x] Uniform viewport, DPR, zoom/pan, preview segment and keyboard station access.
+- [x] Optional timed grants, district events and selectable service plans.
+- [x] Shared run counter object and deterministic five-phase network scenario.
+- [ ] Verify the actual Pages publication once the environment permits the host; compare its version and asset responses.
+- [ ] Move route edits, fleet dispatch, phase rewards and upgrades behind explicit tested engine commands.
+- [ ] Extract dynamic Canvas rendering and profile long sessions on real mobile hardware.
+- [ ] Playtest grant deadlines and the rush-hour curve with human players; tune using outcomes.
+- [ ] Add curated victory scenarios, seeded replay, local run history and persistent unlocks before new cities.
+
+No campaign, second city, daily challenge or permanent progression is advertised as implemented in this release.

@@ -18,6 +18,7 @@ export interface PassengerTripCandidate<TPayload = unknown> {
 export interface PassengerDemandContext {
   readonly elapsed: number;
   readonly hour: number;
+  readonly event?: { stationId: string } | null;
 }
 
 /**
@@ -65,6 +66,10 @@ export function passengerTripWeight<TPayload>(
       break;
   }
 
+  if (context.event) {
+    // Ferry arrivals generate departures; cultural openings attract inbound trips.
+    if (context.event.stationId === 'harbor' ? from.id === 'harbor' : to.id === context.event.stationId) weight *= 5;
+  }
   return weight;
 }
 

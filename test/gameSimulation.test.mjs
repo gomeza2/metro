@@ -24,7 +24,7 @@ function train(overrides = {}) {
   };
 }
 
-function createGame({ queueA = [], passengers = [], dwell = 10, overload = 0, running = true, secondStationId = 'B' } = {}) {
+function createGame({ queueA = [], passengers = [], dwell = 10, overload = 0, running = true, secondStationId = 'B', plan = 'standard', seed } = {}) {
   const a = station('A', 0, queueA);
   const b = station(secondStationId, 10);
   const c = station('C', 20);
@@ -65,6 +65,8 @@ function createGame({ queueA = [], passengers = [], dwell = 10, overload = 0, ru
       active = false;
     },
     random: () => 0,
+    getServicePlan: () => plan,
+    ...(seed === undefined ? {} : { getEventSeed: () => seed }),
   });
 
   return {
@@ -160,4 +162,17 @@ test('reduces overload pressure while a station queue is below the warning limit
   const game = createGame({ overload: 4 });
   game.simulation.step(1);
   assert.equal(game.stations[0].overload, 3.3);
+});
+
+
+test('rush generates demand earlier and relaxed demand leaves more planning time', () => {
+  const normal = createGame(), rush = createGame({plan: 'rush'}), relaxed = createGame({plan: 'relaxed'});
+  for (const game of [normal,rush,relaxed]) game.simulation.step(4);
+  assert.equal(rush.state.passengerId,2);assert.equal(normal.state.passengerId,1);assert.equal(relaxed.state.passengerId,1);
+});
+test('sandbox retains queues but cannot lose to overload; rush has a shorter rescue window', () => {
+  const queue=Array.from({length:13},(_,i)=>passenger(i,'A','B',['A','B']));
+  const sandbox=createGame({plan:'sandbox',queueA:queue,overload:20});sandbox.simulation.step(1/60);
+  assert.equal(sandbox.overloadStation(),null);assert.ok(sandbox.stations[0].queue.length>=13);
+  const rush=createGame({plan:'rush',queueA:queue,overload:12});rush.simulation.step(1/60);assert.equal(rush.overloadStation().id,'A');
 });

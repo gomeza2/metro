@@ -61,6 +61,7 @@
               <p class="menu-kicker"><span></span> THE CITY IS YOURS TO CONNECT</p>
               <h1>Build a network.<br />Keep the <em>city moving.</em></h1>
               <p class="menu-lead">Start with two stations, learn how demand moves, then adapt your lines as the city enters new phases. Every shift brings a different problem to solve.</p>
+              <div class="service-plan-picker"><label for="service-plan">YOUR SERVICE PLAN</label><select id="service-plan"><option value="standard">City shift · original challenge</option><option value="relaxed">Gentle shift · learn at your pace</option><option value="rush">Rush hour · expert pressure</option><option value="sandbox">Free build · no overload defeat</option></select><p id="service-plan-description">The original five-phase shift. Build, adapt and survive.</p></div>
               <div class="menu-actions">
                 <button id="start-game" class="menu-play-button" type="button">
                   <span class="play-icon">▶</span>
@@ -117,21 +118,22 @@
         </div>
       </section>
 
-      <header class="topbar">
+      <header class="topbar" inert>
         <a class="brand" href="#" aria-label="CITYFLOW home">
           <span class="brand-mark"><i></i><i></i><i></i></span>
           <span>CITYFLOW</span>
-          <span class="brand-edition">CITY EDITION</span>
+          <span id="service-plan-label" class="brand-edition">City shift</span>
         </a>
         <div class="topbar-right">
           <span class="live-indicator"><i></i> LIVE CITY</span>
           <button id="sound-button" class="icon-button" type="button" title="Toggle original ambient soundtrack" aria-label="Toggle original ambient soundtrack">♫ <span>Sound off</span></button>
           <a class="spotify-link" href="https://open.spotify.com/search/electronic%20instrumental%20gaming%20music" target="_blank" rel="noopener noreferrer" aria-label="Find instrumental game music on Spotify">♫ <span>Spotify</span></a>
+          <button id="new-shift" class="icon-button" type="button" title="Choose another service plan" aria-label="New shift">↻ <span>New shift</span></button>
           <button id="help-button" class="icon-button" type="button" title="How to play" aria-label="How to play">? <span>How to play</span></button>
         </div>
       </header>
 
-      <main class="layout">
+      <main class="layout" inert>
         <section class="game-column">
           <div class="intro-row">
             <div>
@@ -140,7 +142,7 @@
               <p class="subtitle">A connected city starts with one good line.</p>
             </div>
             <div class="playback-row">
-              <button id="pause-button" class="pause-button" type="button"><span>Ⅱ</span> Pause</button>
+              <button id="pause-button" class="pause-button" type="button"><span aria-hidden="true">II</span> Pause</button>
               <div class="speed-control" aria-label="Simulation speed">
                 <button data-speed="1" class="speed-button active" type="button">1×</button>
                 <button data-speed="2" class="speed-button" type="button">2×</button>
@@ -189,7 +191,7 @@
             </div>
 
             <div class="map-footer">
-              <div class="map-legend"><span><i class="legend-station"></i> Station</span><span><i class="legend-train"></i> Metro line</span><span><i class="legend-passenger"></i> Waiting queue</span></div>
+              <div id="network-summary" class="network-summary" aria-label="Live network summary"></div><div class="map-legend"><span><i class="legend-station"></i> Station</span><span><i class="legend-train"></i> Metro line</span><span><i class="legend-passenger"></i> Waiting queue</span></div>
               <div id="map-status" class="map-status" role="status" aria-live="polite">SELECT A LINE · CONNECT TWO STATIONS</div>
             </div>
           </section>
@@ -205,8 +207,8 @@
               </div>
             </div>
             <div class="dock-actions">
-              <button id="undo-button" class="text-button" type="button">↶ <span>Undo</span></button>
-              <button id="clear-button" class="text-button" type="button">× <span>Clear line</span></button>
+              <button aria-label="Undo last station" id="undo-button" class="text-button" type="button">↶ <span>Undo</span></button>
+              <button aria-label="Clear selected line" id="clear-button" class="text-button" type="button">× <span>Clear line</span></button>
             </div>
           </section>
 
@@ -224,7 +226,8 @@
           </section>
         </section>
 
-        <aside class="side-panel">
+        <aside class="side-panel" data-mobile-panel="overview">
+          <nav class="panel-tabs" aria-label="Operations panels"><button type="button" data-panel="overview" aria-pressed="true">Overview</button><button type="button" data-panel="missions" aria-pressed="false">Shift</button><button type="button" data-panel="grants" aria-pressed="false">Grants</button><button type="button" data-panel="station" aria-pressed="false">Station</button></nav>
           <section class="score-card">
             <div class="panel-head"><span class="eyebrow">CITY PERFORMANCE</span><span class="status-pill"><i></i> OPERATING</span></div>
             <div class="score-main"><span>PEOPLE DELIVERED</span><strong id="score">000</strong><small>passengers this session</small></div>
@@ -250,6 +253,17 @@
           </section>
 
 
+
+          <section class="contract-card" aria-labelledby="grants-title">
+            <div class="panel-head"><span id="grants-title" class="eyebrow">CITY SERVICE GRANTS</span><span id="grant-count">0 / 3 EARNED</span></div>
+            <p id="contract-status" role="status">Choose one grant. Pause to plan.</p>
+            <div id="contract-offers">
+              <button type="button" data-contract="deliveries"><span><b>Reliable service</b><small>10 more deliveries · 75s</small></span><strong>+$18</strong></button>
+              <button type="button" data-contract="coverage"><span><b>Citywide access</b><small>8 stations in one network · 60s</small></span><strong>+$14</strong></button>
+              <button type="button" data-contract="interchange"><span><b>Transfer hub</b><small>3 lines at one station · 60s</small></span><strong>+$12</strong></button>
+            </div>
+            <small class="grant-footnote">One active grant. One attempt each per shift. No entry fee.</small>
+          </section>
 
           <section class="station-card">
             <div class="panel-head"><span class="eyebrow">STATION INSPECTOR</span><span class="station-inspector-mark">⌖</span></div>

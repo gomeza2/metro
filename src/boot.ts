@@ -67,7 +67,8 @@ async function bootCityFlow(): Promise<void> {
   animationFrame = window.requestAnimationFrame(animateLoading);
 
   try {
-    if (getComputedStyle(document.documentElement).getPropertyValue('--cityflow-ui-ready').trim() !== '1') {
+    const styles = getComputedStyle(document.documentElement);
+    if (styles.getPropertyValue('--cityflow-ui-ready').trim() !== '1' || styles.getPropertyValue('--cityflow-command-ready').trim() !== '1') {
       throw new Error('The interface stylesheet did not load. Reload to fetch the latest build.');
     }
     await Promise.all([import('./main'), ready]);

@@ -2,11 +2,18 @@
 
 A small, original urban-transit strategy game prototype. Build metro lines, connect stations, move passengers, manage capacity, and keep the network flowing.
 
-## Current release — v0.16.0
+## Current release — v0.18.0 · Network control
 
-The current build separates gameplay updates from the browser interface and focuses on clarity and playability: a redesigned high-contrast interface, a cleaner Port Azure city map, station labels positioned to avoid collisions, a matching menu-map preview, and simpler first-route instructions. The static passenger-demand illustration was removed so the interface only presents gameplay information that is actually connected to the simulation.
+A map-led operations desk with larger type, readable touch controls, mobile panel navigation and a shared city preview. All fourteen stations, four editable lines, transfers, upgrades, optional audio and the five stadium shift phases remain available.
 
-Play the published build: https://gomeza2.github.io/metro/
+- Uniform Canvas scaling with DPR-aware backing store, 1–3× zoom, drag-to-pan, Fit and a keyboard station selector. Ctrl/Meta+wheel zooms; ordinary scrolling stays available.
+- Four service plans: **City shift** (original balance), **Gentle shift** (70% demand, 25-second rescue window, $40), **Rush hour** (150% demand, 12-second rescue window) and **Free build** (70% demand, $150, no overload defeat).
+- Optional city grants: ten new deliveries, eight stations in one connected network or a three-line interchange. Accept one at a time; complete it before its simulation-time deadline for funds. Each grant allows one attempt per shift; restarting restores the offers.
+- Seeded museum, harbor and university events redirect connected passenger demand. An advance notice and map ring identify the affected district. The existing stadium phases keep their own time window.
+- Ranked best scores are separate for each difficulty; the original standard score is preserved. Free build is unranked. Audio and Spotify remain optional.
+- Missing CSS produces a readable recovery screen instead of starting an unstyled game. Production output includes the exact package version and verified relative asset paths.
+
+Play the published build: https://gomeza2.github.io/metro/ (publication may lag this branch).
 
 ## Run locally
 
@@ -59,12 +66,28 @@ Passengers earn operating funds when delivered. Capacity and express upgrades ha
 
 The project deliberately starts without accounts, a backend, or external music services. The game should first prove that its core loop is fun and understandable.
 
+## Browser QA
+
+Run `npm test` and `npm run build` first. The optional `scripts/browser-smoke.mjs` uses an external Playwright installation and system Chromium; it adds no application dependency:
+
+```bash
+npm install --prefix /tmp/cityflow-qa-tools --no-save --package-lock=false playwright-core
+PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/browser-smoke.mjs
+```
+
+Start Vite before that command. Pass a different base URL as the first argument to test a static build served under `/metro/`. The check covers four viewports, asset responses, real canvas taps, grants, purchases, inspection, zoom/pan, DPR, restart and CSS failure recovery. Screenshots default to `/tmp/cityflow-qa`. See [QA notes](docs/QA_0.18.md) for observed results and limits.
+
 ## Project structure
 
 - `src/boot.ts`: startup progress and loading error recovery.
 - `src/main.ts`: browser presentation, rendering, input, audio and simulation wiring.
 - `src/simulation/gameSimulation.ts`: DOM-free gameplay updates for passengers, trains, boarding, transfers, rewards and station pressure.
 - `src/simulation/gameTypes.ts`: shared simulation entity types.
+- `src/mapViewport.ts`: uniform world/CSS transforms, zoom and pan.
+- `src/cityMap.ts`: shared fourteen-station metadata and fresh runtime station creation.
+- `src/simulation/runState.ts`: run counters and explicit reset.
+- `src/simulation/servicePlans.ts`: difficulty tuning and seeded district events.
+- `src/simulation/serviceContracts.ts`: optional grants, progress, deadlines and one-time rewards.
 - `src/visuals.ts`: city scenery and map landmarks.
 - `src/style.css`: game interface, loading screen, and responsive layout.
 - `index.html`: accessible application shell.

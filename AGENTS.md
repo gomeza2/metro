@@ -14,3 +14,7 @@ Use the existing checkout; do not create a worktree unless requested. Node >=20 
 - Urban/relaxed start with 3 stations and 1 line by default. Use `#progressive-city` to select full-city play; specialized modes already use the full city.
 - Keep onboarding optional and nonblocking. Do not reintroduce a loading screen or timed startup lock.
 - Policies apply at stations, not mid-leg. Passenger conservation and budget validation must remain covered when changing operations.
+
+- Route drafts must not mutate live routes, fleets or planners until Apply. Apply and Discard both retain pause, including after resuming from the menu.
+- Operating incidents are optional except in rush mode; keep separate best-score keys and preserve the user's non-rush preference.
+- Run history is optional, validated local data, limited to eight summaries; storage failures must not block gameplay.

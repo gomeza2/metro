@@ -1,3 +1,4 @@
+import { incidentAt } from './operatingIncidents.js';
 import { OPERATING_POLICIES, trainSeats, trainSpeed } from './operatingPolicies.js';
 import { stationQueueLimit } from './stationCapacity.js';
 import type { RunEconomy } from './runEconomy.js';
@@ -36,6 +37,7 @@ export interface GameSimulationOptions {
   random?: () => number;
   getServicePlan?: () => ServicePlanId;
   getEventSeed?: () => number;
+  getIncidentsEnabled?: () => boolean;
   economy?: RunEconomy;
   onPhaseReward?: (reward: number) => void;
 }
@@ -72,6 +74,7 @@ export class GameSimulation {
       if (state.elapsed > 90 && this.random() < 0.22) this.spawnPassenger();
     }
 
+    const incident = incidentAt(state.elapsed, this.options.getEventSeed?.() ?? 0, this.options.getIncidentsEnabled?.() ?? false);
     for (const line of lines) {
       if (line.stations.length < 2) continue;
 
@@ -94,7 +97,8 @@ export class GameSimulation {
         if (!current || !next) continue;
 
         const distance = Math.hypot(next.x - current.x, next.y - current.y);
-        const travelUnitsPerSecond = trainSpeed(this.options.getExpressLevel(), train.policy ?? line.policy ?? 'balanced');
+        const affected = incident && (incident.stationId === current.id || incident.stationId === next.id);
+        const travelUnitsPerSecond = trainSpeed(this.options.getExpressLevel(), train.policy ?? line.policy ?? 'balanced') * (affected ? incident.speed : 1);
         train.progress += (dt * travelUnitsPerSecond) / Math.max(1, distance);
 
         if (train.progress >= 1) {

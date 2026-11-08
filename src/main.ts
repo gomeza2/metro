@@ -1,3 +1,6 @@
+import { RouteDraft, routeImpact } from './simulation/routeDraft';
+import { incidentAt, approachingIncident } from './simulation/operatingIncidents';
+import { HISTORY_KEY, parseRunHistory, appendRun, type RunOutcome, type RunRecord } from './runHistory';
 import { cityGrowthAt, tutorialStep } from './simulation/cityGrowth';
 import { OPERATING_POLICIES, POLICY_CHANGE_COST, serviceEstimate, trainSeats, type OperatingPolicyId } from './simulation/operatingPolicies';
 import { platformLevel, platformCost, stationQueueLimit } from './simulation/stationCapacity';
@@ -54,6 +57,11 @@ let tutorialPaused = false;
 let tutorialCompleted = false;
 let tutorialInspected = false;
 let policyPreview: OperatingPolicyId | null = null;
+let routeDraft: RouteDraft | null = null;
+let incidentsEnabled = false;
+let incidentPreference = false;
+let history: RunRecord[] = [];
+try { history = parseRunHistory(localStorage.getItem(HISTORY_KEY)); } catch { /* History is optional. */ }
 let focusedStation: Station | null = null;
 const simulationState = new RunState();
 const economy = new RunEconomy();
@@ -61,7 +69,7 @@ const completedPhaseObjectives = economy.completedPhases;
 let servicePlan: ServicePlanId = 'standard';
 let eventSeed = Math.floor(Math.random() * 0x100000000);
 const contracts = new ServiceContracts();
-const bestScoreKey = () => servicePlan === 'standard' && !progressiveCity ? 'cityflow.bestScore.v1' : `cityflow.bestScore.${servicePlan}${progressiveCity ? '.growth' : ''}.v1`;
+const bestScoreKey = () => servicePlan === 'standard' && !progressiveCity && !incidentsEnabled ? 'cityflow.bestScore.v1' : `cityflow.bestScore.${servicePlan}${progressiveCity ? '.growth' : ''}${incidentsEnabled ? '.incidents' : ''}.v1`;
 function readBestScore(): number {
   try {
     const stored = Number(localStorage.getItem(bestScoreKey()) ?? 0);
@@ -99,12 +107,13 @@ const gameSimulation = new GameSimulation({
   lines,
   state: simulationState,
   getRoutePlanner: () => network.planner,
-  isRunning: () => gameStarted && !paused && !gameOver && !document.body.classList.contains('menu-active'),
+  isRunning: () => gameStarted && !paused && !routeDraft && !gameOver && !document.body.classList.contains('menu-active'),
   getCapacityLevel: () => economy.capacityLevel,
   getExpressLevel: () => economy.expressLevel,
   onOverload: endGame,
   getServicePlan: () => servicePlan,
   getEventSeed: () => eventSeed,
+  getIncidentsEnabled: () => incidentsEnabled,
   economy,
   onPhaseReward: reward => { $('#map-status').textContent = `OBJETIVO COMPLETADO · +$${reward} DE PREMIO`; },
 });
@@ -164,6 +173,10 @@ function addStationToSelectedLine(station: Station): void {
   }
   const line = lines[selectedLine];
   if (!line || gameOver) return;
+  if (routeDraft) {
+    routeDraft.select(station.id); focusedStation = station; updateHUD();
+    $('#map-status').textContent = 'BORRADOR · La ruta real no cambia hasta aplicar.'; return;
+  }
   const result = network.selectStation(line.id, station.id);
   if (result === 'invalid') {
     $('#map-status').textContent = 'RUTA NO DISPONIBLE · ELIGE UNA ESTACIÓN HABILITADA';
@@ -179,6 +192,7 @@ function addStationToSelectedLine(station: Station): void {
 }
 
 function undoRoute(): void {
+  if (routeDraft) { routeDraft.undo(); updateHUD(); return; }
   const line = lines[selectedLine];
   if (!line || !line.stations.length || gameOver) return;
   network.undo(line.id);
@@ -190,6 +204,7 @@ function undoRoute(): void {
 }
 
 function clearRoute(): void {
+  if (routeDraft) { routeDraft.clear(); updateHUD(); return; }
   const line = lines[selectedLine];
   if (!line || gameOver || !line.stations.length) return;
   network.clear(line.id);
@@ -208,7 +223,7 @@ function updateSimulation(dt: number): void {
       const status = challengeStatus();
       if (status.outcome !== 'running') finishRun(status.outcome === 'won', status.outcome === 'won'
         ? '¡Port Azure está certificada! Completaste 30 viajes, conectaste ocho estaciones y cumpliste dos contratos.'
-        : 'Se acabó el plazo. Conecta ocho estaciones, completa dos contratos y transporta 30 personas antes de los 320 segundos.');
+        : 'Se acabó el plazo. Conecta ocho estaciones, completa dos contratos y transporta 30 personas antes de los 320 segundos.', status.outcome === 'won' ? 'certified' : 'deadline');
     }
   }
 }
@@ -216,8 +231,10 @@ function updateSimulation(dt: number): void {
 function endGame(station: Station): void {
   finishRun(false, `${station.name} estuvo saturada demasiado tiempo. La ciudad necesita más capacidad o una conexión mejor.`);
 }
-function finishRun(success: boolean, copy: string): void {
+function finishRun(success: boolean, copy: string, reason: RunOutcome = success ? 'certified' : 'overload'): void {
   if (gameOver) return;
+  saveRun(reason);
+  routeDraft = null;
   gameOver = true;
   runResult = success ? 'won' : 'lost';
   paused = true;
@@ -253,6 +270,7 @@ function drawLine(line: MetroLine): void {
   const points = line.stations.map(stationById);
 
   ctx.save();
+  if (routeDraft && routeDraft.lineId === line.id) ctx.globalAlpha = 0.3;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
@@ -299,9 +317,9 @@ const STATION_LABEL_LAYOUT: Record<string, { dx: number; dy: number; anchor: Sta
   airport: { dx: -8, dy: -32, anchor: 'center' },
 };
 
-function drawStation(station: Station, eventTarget = false): void {
+function drawStation(station: Station, eventTarget = false, incidentTarget = false): void {
   const connectedLines = lines.filter((line) => line.stations.includes(station.id));
-  const selected = lines[selectedLine]?.stations.includes(station.id) ?? false;
+  const selected = (routeDraft?.stations ?? lines[selectedLine]?.stations ?? []).includes(station.id);
   const focused = focusedStation?.id === station.id;
   const hovered = hoveredStation?.id === station.id;
   const palette: Record<StationKind, string> = {
@@ -338,6 +356,9 @@ function drawStation(station: Station, eventTarget = false): void {
   if (eventTarget) {
     ctx.save(); ctx.beginPath(); ctx.arc(station.x, station.y, radius + 18, 0, Math.PI * 2);
     ctx.strokeStyle = '#b97a2c'; ctx.lineWidth = 3; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.restore();
+  }
+  if (incidentTarget) {
+    ctx.save();ctx.strokeStyle = '#af4d31';ctx.lineWidth = 4;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(station.x,station.y,radius+20,0,Math.PI*2);ctx.stroke();ctx.restore();
   }
   // White marker, district-color ring and dark center stay readable over every district.
   ctx.save();
@@ -534,14 +555,19 @@ function render(): void {
   drawBackground();
   drawCityOverlay(ctx, simulationState.elapsed);
   for (const line of lines) drawLine(line);
-  const endpoint = lines[selectedLine]?.stations.at(-1);
+  if (routeDraft && routeDraft.stations.length >= 2) {
+    ctx.save();ctx.lineWidth = 6;ctx.lineCap = 'round';ctx.lineJoin = 'round';ctx.strokeStyle = lines[selectedLine]!.color;ctx.setLineDash([12,8]);ctx.beginPath();
+    routeDraft.stations.forEach((id,index) => { const station = stationById(id);if(index === 0)ctx.moveTo(station.x,station.y);else ctx.lineTo(station.x,station.y); });ctx.stroke();ctx.restore();
+  }
+  const endpoint = (routeDraft?.stations ?? lines[selectedLine]?.stations)?.at(-1);
   if (routeEditMode && hoveredStation && endpoint && endpoint !== hoveredStation.id) {
     const from = stationById(endpoint);
     ctx.save(); ctx.setLineDash([8, 8]); ctx.strokeStyle = lines[selectedLine]!.color; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(hoveredStation.x, hoveredStation.y); ctx.stroke(); ctx.restore();
   }
   const districtEvent = districtEventAt(simulationState.elapsed, eventSeed);
-  for (const station of stations) if (station.active !== false) drawStation(station, districtEvent?.stationId === station.id);
+  const incident = incidentAt(simulationState.elapsed, eventSeed, incidentsEnabled);
+  for (const station of stations) if (station.active !== false) drawStation(station, districtEvent?.stationId === station.id, incident?.stationId === station.id);
   for (const line of lines) {
     for (const train of line.trains) drawTrain(line, train);
   }
@@ -650,6 +676,8 @@ function updateCityEvent(): void {
 }
 
 function updateHUD(): void {
+  updateDraft();
+  updateIncident();
   updateStartHint();
   const guidedOpening = progressiveCity && !hintDismissed && $<HTMLInputElement>('#tutorial-enabled').checked && simulationState.score < 1;
   $('#line-operations').hidden = guidedOpening;
@@ -661,10 +689,13 @@ function updateHUD(): void {
   $('#growth-fit').hidden = !progressiveCity || growth.ids.length <= 3;
   $('#growth-state').textContent = progressiveCity ? `${growth.ids.length} / 14 estaciones · ${growth.lines} / 4 líneas · ${growth.nextAt === null ? 'Ciudad completa' : `Expansión en ${Math.max(0, Math.ceil(growth.nextAt - simulationState.elapsed))} s`}` : 'Ciudad completa · 14 estaciones · 4 líneas';
   $('.status-pill').innerHTML = `<i></i> ${runResult === 'won' ? 'CERTIFICADA' : runResult === 'lost' ? 'FINALIZADO' : paused ? 'EN PAUSA' : 'EN SERVICIO'}`;
-  $<HTMLButtonElement>('#pause-button').disabled = gameOver;
-  document.querySelectorAll<HTMLButtonElement>('.speed-button').forEach(button => { button.disabled = gameOver; button.setAttribute('aria-pressed', String(Number(button.dataset.speed) === simulationSpeed)); });
+  $<HTMLButtonElement>('#pause-button').disabled = gameOver || !!routeDraft;
+  document.querySelectorAll<HTMLButtonElement>('.speed-button').forEach(button => { button.disabled = gameOver || !!routeDraft; button.setAttribute('aria-pressed', String(Number(button.dataset.speed) === simulationSpeed)); });
   $('#pause-button').innerHTML = gameOver ? 'Finalizado' : paused ? '<span aria-hidden="true">▶</span> Continuar' : '<span aria-hidden="true">II</span> Pausa';
   $('#pause-button').setAttribute('aria-pressed', String(paused));
+  $('#quick-pause').hidden = !gameStarted || gameOver || !!routeDraft;
+  $('#quick-pause').textContent = `${$('#quick-pause').dataset.incident === 'true' ? '⚠ ' : ''}${paused ? '▶ Continuar turno' : 'II Pausa para pensar'}`;
+  $('#quick-pause').setAttribute('aria-pressed', String(paused));
   $('#network-summary').textContent = `$${simulationState.credits} en fondos · ${simulationState.score} viajes · ${totalWaiting()} esperando`;
   updateContracts();
   updateChallenge();
@@ -706,7 +737,7 @@ function updateHUD(): void {
   modeButton.innerHTML = routeEditMode ? '<span class="mode-icon">⌁</span><span><b>Editar ruta</b><small>Toca estaciones para conectar</small></span>' : '<span class="mode-icon">⌖</span><span><b>Inspeccionar</b><small>Toca una estación para verla</small></span>';
   const picker = $('#line-picker');
   picker.querySelectorAll<HTMLButtonElement>('.line-swatch').forEach((button) => {
-    button.disabled = Number(button.dataset.line) >= unlockedLines || gameOver;
+    button.disabled = Number(button.dataset.line) >= unlockedLines || gameOver || (!!routeDraft && Number(button.dataset.line) !== selectedLine);
     button.classList.toggle('selected', Number(button.dataset.line) === selectedLine);
     const line = lines[Number(button.dataset.line)];
     button.classList.toggle('has-route', (line?.stations.length ?? 0) >= 2);
@@ -776,6 +807,7 @@ function updateStationInspector(): void {
 }
 
 function selectLine(index: number): void {
+  if (routeDraft && index !== selectedLine) { $('#map-status').textContent = 'Aplica o descarta el borrador antes de cambiar de línea.'; return; }
   if (index >= unlockedLines || index < 0) { $('#map-status').textContent = 'Esta línea se habilita con la próxima expansión.'; return; }
   policyPreview = null;
   selectedLine = index;
@@ -790,10 +822,11 @@ function selectLine(index: number): void {
 
 function startGame(): void {
   gameStarted = true;
+  $<HTMLInputElement>('#incidents-enabled').disabled = true;
   $<HTMLSelectElement>('#service-plan').disabled = true;
   $<HTMLInputElement>('#progressive-city').disabled = true;
   $<HTMLInputElement>('#tutorial-enabled').disabled = true;
-  paused = false;
+  paused = !!routeDraft;
   document.body.classList.remove('menu-active');
   $('#main-menu').classList.add('is-closed');
   $('#main-menu').setAttribute('aria-hidden', 'true');
@@ -823,11 +856,13 @@ function openMainMenu(): void {
 }
 
 function togglePause(): void {
+  if (routeDraft) { $('#map-status').textContent = 'Aplica o descarta el borrador para continuar.'; return; }
   if (!gameStarted || gameOver || document.body.classList.contains('menu-active')) return;
   paused = !paused;
   if (paused) tutorialPaused = true;
   $('#pause-button').innerHTML = paused ? '<span>▶</span> Continuar' : '<span aria-hidden="true">II</span> Pausa';
   $('#map-status').textContent = paused ? 'SIMULACIÓN EN PAUSA' : 'RED EN MARCHA';
+  updateHUD();
 }
 
 const SOUNDTRACK_PHASES = [
@@ -923,6 +958,7 @@ function toggleSound(): void {
 }
 
 function restartGame(): void {
+  routeDraft = null;
   network.reset();
   selectedLine = 0;
   hintDismissed = false;
@@ -1041,6 +1077,8 @@ $('#service-plan').addEventListener('change', () => {
   const selected = $<HTMLSelectElement>('#service-plan').value as ServicePlanId;
   if (!(selected in SERVICE_PLANS)) return;
   servicePlan = selected;
+  incidentsEnabled = servicePlan === 'rush' || incidentPreference;
+  $<HTMLInputElement>('#incidents-enabled').checked = incidentsEnabled;
   configureGrowth();
   simulationState.credits = SERVICE_PLANS[servicePlan].startingCredits;
   bestScore = readBestScore();
@@ -1049,11 +1087,14 @@ $('#service-plan').addEventListener('change', () => {
 });
 $('#new-shift').addEventListener('click', () => {
   if (gameStarted && !gameOver && !window.confirm('¿Terminar este turno y elegir otro modo? Se reiniciarán las rutas y el progreso.')) return;
+  if (!gameOver && simulationState.elapsed > 0) saveRun('abandoned');
   restartGame();
   gameStarted = false;
   paused = true;
   $<HTMLSelectElement>('#service-plan').disabled = false;
+  $<HTMLInputElement>('#incidents-enabled').disabled = servicePlan === 'rush';
   $<HTMLInputElement>('#progressive-city').disabled = !['standard','relaxed'].includes(servicePlan);
+  $<HTMLInputElement>('#incidents-enabled').disabled = gameStarted || servicePlan === 'rush';
   $<HTMLInputElement>('#tutorial-enabled').disabled = false;
   document.body.classList.add('menu-active');
   $('#main-menu').classList.remove('is-closed');
@@ -1101,10 +1142,87 @@ function updateContracts(): void {
 function configureGrowth(): void {
   progressiveCity = ['standard','relaxed'].includes(servicePlan) && $<HTMLInputElement>('#progressive-city').checked;
   $<HTMLInputElement>('#progressive-city').disabled = !['standard','relaxed'].includes(servicePlan);
+  $<HTMLInputElement>('#incidents-enabled').disabled = gameStarted || servicePlan === 'rush';
   growthKey = '';
   syncGrowth();
 }
 $('#progressive-city').addEventListener('change', () => { if (!gameStarted) { configureGrowth(); bestScore = readBestScore(); updateHUD(); } });
+$('#incidents-enabled').addEventListener('change', () => {
+  if (gameStarted) return;
+  incidentPreference = $<HTMLInputElement>('#incidents-enabled').checked;
+  incidentsEnabled = servicePlan === 'rush' || incidentPreference;
+  bestScore = readBestScore(); updateHUD();
+});
+function beginDraft(): void {
+  if (!gameStarted || gameOver || routeDraft) return;
+  paused = true; tutorialPaused = true; routeEditMode = true;
+  routeDraft = new RouteDraft(selectedLine, lines[selectedLine]!.stations, new Set(stations.filter(station => station.active !== false).map(station => station.id)));
+  $('#map-status').textContent = 'BORRADOR · Toca estaciones, compara y aplica. El tiempo está detenido.';
+  updateHUD();
+  $('#game-canvas').focus();
+}
+function discardDraft(): void {
+  routeDraft = null;
+  $('#map-status').textContent = 'Borrador descartado. La ruta original sigue intacta; continúas en pausa.';
+  updateHUD();
+}
+$('#plan-route').addEventListener('click', beginDraft);
+$('#discard-draft').addEventListener('click', discardDraft);
+$('#apply-draft').addEventListener('click', () => {
+  if (!routeDraft || gameOver) return;
+  const result = network.replaceRoute(routeDraft.lineId, routeDraft.stations);
+  if (result === 'invalid') { $('#map-status').textContent = 'No se puede aplicar: hay una estación no disponible.'; return; }
+  routeDraft = null;
+  $('#map-status').textContent = 'Ruta aplicada. Continúas en pausa para revisar tu red.';
+  updateHUD();
+});
+function updateDraft(): void {
+  $('#draft-panel').hidden = !routeDraft;
+  $<HTMLButtonElement>('#plan-route').disabled = !gameStarted || gameOver || !!routeDraft;
+  $('#draft-summary').textContent = routeDraft ? `${lines[selectedLine]!.name} · ${routeDraft.stations.length} estaciones propuestas` : '';
+  if (!routeDraft) return;
+  const impact = routeImpact(stations, lines, routeDraft);
+  $('#draft-impact').textContent = `Red conectada: ${impact.before} → ${impact.after} estaciones. ${impact.disconnected} personas quedarían esperando sin ruta. No se eliminan pasajeros.`;
+  $('#draft-panel').classList.toggle('has-warning', impact.disconnected > 0);
+  $<HTMLButtonElement>('#apply-draft').disabled = !routeDraft.changed;
+}
+function updateIncident(): void {
+  const active = incidentAt(simulationState.elapsed,eventSeed,incidentsEnabled);
+  const upcoming = approachingIncident(simulationState.elapsed,eventSeed,incidentsEnabled);
+  const incident = active ?? upcoming;
+  $('#incident-panel').hidden = !incident;
+  $('#operating-alert').hidden = !incident;
+  $('#quick-pause').dataset.incident = String(!!active);
+  if (!incident) return;
+  const name = stationById(incident.stationId).name;
+  const alert = `${active ? '⚠ Señal lenta' : 'Próxima incidencia'} · ${name} · Ver detalles`;
+  if ($('#operating-alert').textContent !== alert) $('#operating-alert').textContent = alert;
+  $('#incident-title').textContent = active ? `Señal lenta en ${name}` : `Preparar: señal lenta en ${name}`;
+  $('#incident-time').textContent = active ? `${Math.ceil(incident.end - simulationState.elapsed)} s restantes` : `En ${Math.ceil(incident.start - simulationState.elapsed)} s`;
+  $('#incident-copy').textContent = 'Durante 30 s, los tramos que tocan esta estación circulan al 65% de su velocidad. Puedes planificar un desvío o reforzar el servicio; la estación sigue abierta.';
+}
+$('#operating-alert').addEventListener('click', () => {
+  $('.side-panel').dataset.mobilePanel = 'missions';
+  document.querySelectorAll<HTMLButtonElement>('[data-panel]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.panel === 'missions')));
+  $('#incident-panel').scrollIntoView({ block:'center' });
+  $('#incident-title').focus();
+});
+function saveRun(outcome: RunOutcome): void {
+  history = appendRun(history,{mode:servicePlan,outcome,score:simulationState.score,elapsed:simulationState.elapsed,phases:completedPhaseObjectives.size,grants:contracts.completed.size,progressive:progressiveCity,incidents:incidentsEnabled});
+  try { localStorage.setItem(HISTORY_KEY,JSON.stringify(history)); } catch { /* Keep the current session's history in memory. */ }
+  renderHistory();
+}
+function renderHistory(): void {
+  const list = $('#run-history');list.replaceChildren();
+  if (!history.length) { const item = document.createElement('li');item.textContent = 'Tus turnos terminados aparecerán aquí. Solo se guardan en este navegador.';list.append(item);return; }
+  const outcomes = {certified:'Certificada',overload:'Congestión',deadline:'Plazo vencido',abandoned:'Interrumpido'};
+  for (const record of history) {
+    const item = document.createElement('li');
+    const minutes = Math.floor(record.elapsed / 60), seconds = Math.floor(record.elapsed % 60);
+    item.textContent = `${SERVICE_PLANS[record.mode].name} · ${record.score} viajes · ${minutes}:${String(seconds).padStart(2,'0')} · ${outcomes[record.outcome]} · ${record.grants}/3 contratos${record.progressive ? ' · Ciudad progresiva' : ''}${record.incidents ? ' · Con incidencias' : ''}`;
+    list.append(item);
+  }
+}
 $('#platform-button').addEventListener('click', () => {
   if (!focusedStation || gameOver || !gameStarted) return;
   const result = economy.expandPlatform(focusedStation, simulationState);
@@ -1126,7 +1244,8 @@ function updateLineOperations(): void {
   const select = $<HTMLSelectElement>('#line-policy');
   if (select.value !== policy) select.value = policy;
   $('#policy-description').textContent = OPERATING_POLICIES[policy].description;
-  const estimate = serviceEstimate(line.stations.map(stationById), line.fleetSize, economy.capacityLevel, economy.expressLevel, policy);
+  const plannedStops = routeDraft?.stations ?? line.stations;
+  const estimate = serviceEstimate(plannedStops.map(stationById), line.fleetSize, economy.capacityLevel, economy.expressLevel, policy);
   $('#policy-seats').textContent = `${estimate.seats} por tren`;
   $('#policy-cycle').textContent = estimate.roundTrip ? `${estimate.roundTrip.toFixed(1)} s` : 'Conecta 2 estaciones';
   $('#policy-headway').textContent = estimate.headway ? `≈ ${estimate.headway.toFixed(1)} s` : '—';
@@ -1134,9 +1253,9 @@ function updateLineOperations(): void {
   const unchanged = (line.policy ?? 'balanced') === policy;
   apply.disabled = unchanged || gameOver || !gameStarted || simulationState.credits < cost;
   apply.textContent = unchanged ? 'Servicio actual' : cost ? `Aplicar · $${cost}` : 'Aplicar gratis';
-  const key = `${selectedLine}:${line.stations.join(',')}`;
+  const key = `${selectedLine}:${plannedStops.join(',')}`;
   if (key !== routeMarkupKey) {
-    $('#line-route').innerHTML = line.stations.length ? line.stations.map(id => `<button type="button" data-inspect-station="${id}">${stationById(id).name}</button>`).join('<span aria-hidden="true">→</span>') : '<span>Elige dos estaciones en el mapa para empezar.</span>';
+    $('#line-route').innerHTML = plannedStops.length ? plannedStops.map(id => `<button type="button" data-inspect-station="${id}">${stationById(id).name}</button>`).join('<span aria-hidden="true">→</span>') : '<span>Elige dos estaciones en el mapa para empezar.</span>';
     routeMarkupKey = key;
   }
 }
@@ -1171,6 +1290,7 @@ $('#line-picker').addEventListener('click', (event) => {
 $('#undo-button').addEventListener('click', undoRoute);
 $('#clear-button').addEventListener('click', clearRoute);
 $('#pause-button').addEventListener('click', togglePause);
+$('#quick-pause').addEventListener('click', togglePause);
 $('#sound-button').addEventListener('click', toggleSound);
 $('#capacity-button').addEventListener('click', () => {
   if (!gameStarted || gameOver) return;
@@ -1215,7 +1335,7 @@ window.addEventListener('keydown', (event) => {
     event.preventDefault();
     togglePause();
   }
-  if (event.key === 'Escape') $('#help-popover').classList.add('hidden');
+  if (event.key === 'Escape') { $('#help-popover').classList.add('hidden'); if (routeDraft) discardDraft(); }
 });
 
 const overview = $<HTMLCanvasElement>('#menu-city-map');
@@ -1233,6 +1353,7 @@ for (const station of CITY_STATIONS) {
   overviewContext.beginPath(); overviewContext.arc(station.x, station.y, 10, 0, Math.PI * 2);
   overviewContext.fillStyle = '#fffef7'; overviewContext.fill(); overviewContext.strokeStyle = '#284e53'; overviewContext.lineWidth = 3; overviewContext.stroke();
 }
+renderHistory();
 syncGrowth();
 $<HTMLDetailsElement>('#line-operations').open = window.innerWidth > 620;
 selectLine(0);

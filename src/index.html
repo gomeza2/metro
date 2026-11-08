@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="cityflow-version" content="0.22.0" />
+    <meta name="cityflow-version" content="0.23.0" />
     <meta name="theme-color" content="#0b1716" />
     <meta name="description" content="CITYFLOW: estrategia de transporte para construir, observar y pensar con calma." />
     <title>CITYFLOW — Estrategia de transporte urbano</title>
@@ -72,7 +72,7 @@
             <a class="menu-brand" href="#" aria-label="Inicio de CITYFLOW">
               <span class="brand-mark"><i></i><i></i><i></i></span>
               <span>CITYFLOW</span>
-              <span class="menu-version">0.22</span>
+              <span class="menu-version">0.23</span>
             </a>
             <div class="menu-nav-meta">
               <span class="menu-online"><i></i> ESTRATEGIA A TU RITMO</span>
@@ -89,7 +89,7 @@
               <h1>Empieza con una línea.<br />Conecta la <em>ciudad, a tu ritmo.</em></h1>
               <p class="menu-lead">Comienza con tres estaciones y un tren. Aprende con un tutorial breve, observa a los pasajeros y adapta tu red a medida que se abren nuevos barrios.</p>
               <div class="service-plan-picker"><label for="service-plan">ELIGE TU EXPERIENCIA</label><select id="service-plan"><option value="standard">Turno urbano · equilibrio y estrategia</option><option value="relaxed">Turno tranquilo · aprende a tu ritmo</option><option value="rush">Hora pico · presión para expertos</option><option value="challenge">Certificación de red · desafío con plazo</option><option value="sandbox">Modo libre · sin derrota por congestión</option></select><p id="service-plan-description">Cinco fases para construir y adaptar la red. Con ciudad progresiva empiezas con poco.</p></div>
-              <div class="beginner-options"><label><input id="progressive-city" type="checkbox" checked /> Ciudad progresiva: empieza con 3 estaciones y 1 línea</label><label><input id="tutorial-enabled" type="checkbox" checked /> Tutorial breve durante la partida</label><small>La ciudad crece a los 30, 60 y 150 segundos de simulación. En libre, hora pico y certificación se abre el mapa completo.</small></div>
+              <div class="beginner-options"><label><input id="progressive-city" type="checkbox" checked /> Ciudad progresiva: empieza con 3 estaciones y 1 línea</label><label><input id="incidents-enabled" type="checkbox" /> Incidencias de señal: avisos, desvíos y más estrategia</label><label><input id="tutorial-enabled" type="checkbox" checked /> Tutorial breve durante la partida</label><small>La ciudad crece a los 30, 60 y 150 segundos de simulación. En libre, hora pico y certificación se abre el mapa completo. Las incidencias son opcionales salvo en hora pico; sus récords se guardan aparte.</small></div>
               <div class="menu-actions">
                 <button disabled id="start-game" class="menu-play-button" type="button">
                   <span class="play-icon">▶</span>
@@ -123,6 +123,7 @@
             </div>
           </div>
 
+          <details class="history-panel"><summary>Últimos turnos · historial de este navegador</summary><ol id="run-history"></ol></details>
           <section id="menu-how-it-works" class="menu-bottom">
             <div class="menu-bottom-heading"><span>LOS PRIMEROS PASOS</span><p>Aprende mientras juegas, sin prisas.</p></div>
             <div class="menu-feature-grid">
@@ -142,7 +143,7 @@
               <article><span>05 · 15:30+</span><b>Regreso de la tarde</b><small>Equilibra una ciudad que ya está en movimiento.</small></article>
             </div>
           </section>
-          <footer class="menu-footer"><span>UN JUEGO ORIGINAL DE ESTRATEGIA DE TRANSPORTE</span><span>PORT AZURE · VERSIÓN 0.22.0</span></footer>
+          <footer class="menu-footer"><span>UN JUEGO ORIGINAL DE ESTRATEGIA DE TRANSPORTE</span><span>PORT AZURE · VERSIÓN 0.23.0</span></footer>
         </div>
       </section>
 
@@ -211,7 +212,7 @@
                   <li><b>Observa los puntos de pasajeros.</b> Muestran dónde hay personas esperando.</li>
                   <li><b>Conecta los lugares con más demanda</b> y no dejes que una cola se mantenga crítica demasiado tiempo.</li>
                 </ol>
-                <p><b>Atajos:</b> Espacio: pausa · 1–4: línea · I: inspeccionar · Z: deshacer · + / −: zoom · 0: ver ciudad. La velocidad ½× permite observar con calma.</p><p>Consejo: un buen transbordo puede ser más útil que tres líneas aisladas.</p>
+                <p><b>Planificar:</b> crea un borrador con el tiempo detenido. Puedes comparar conexiones y frecuencia antes de aplicar. Esc descarta el borrador; la pausa se mantiene.</p><p><b>Atajos:</b> Espacio: pausa · 1–4: línea · I: inspeccionar · Z: deshacer · + / −: zoom · 0: ver ciudad. La velocidad ½× permite observar con calma.</p><p>Consejo: un buen transbordo puede ser más útil que tres líneas aisladas.</p>
               </div>
             </div>
 
@@ -220,7 +221,8 @@
                 <span><strong>Tu primera línea</strong><small>Toca dos estaciones para poner en marcha tu primer tren.</small></span>
                 <button id="dismiss-hint" type="button" aria-label="Omitir tutorial">×</button>
               </div>
-            <div class="map-footer"><div id="growth-state" class="growth-state"></div><button id="growth-fit" type="button" hidden>Ver nuevas estaciones</button>
+            <div id="draft-panel" class="draft-panel" hidden><strong id="draft-summary"></strong><p id="draft-impact"></p><small>Trazo discontinuo: borrador. La ruta original sigue atenuada. Aplicar o descartar mantiene la pausa.</small><div><button id="apply-draft" type="button">Aplicar ruta</button><button id="discard-draft" type="button">Descartar · Esc</button></div></div>
+            <div class="map-footer"><button id="operating-alert" type="button" hidden aria-live="polite"></button><div id="growth-state" class="growth-state"></div><button id="growth-fit" type="button" hidden>Ver nuevas estaciones</button>
               <div id="network-summary" class="network-summary" aria-label="Resumen de la red"></div><div class="map-legend"><span><i class="legend-station"></i> Estación</span><span><i class="legend-train"></i> Línea de metro</span><span><i class="legend-passenger"></i> Cola de espera</span></div>
               <div id="map-status" class="map-status" role="status" aria-live="polite">ELIGE UNA LÍNEA · CONECTA DOS ESTACIONES</div>
             </div>
@@ -236,7 +238,7 @@
                 <button class="line-swatch" data-line="3" type="button" aria-label="Elegir línea ámbar" title="Línea ámbar"><i style="--swatch:#d5a14e"></i><span>04</span></button>
               </div>
             </div>
-            <div class="dock-actions">
+            <div class="dock-actions"><button id="plan-route" class="text-button" type="button" aria-label="Planificar ruta sin modificar el servicio"><span>Planificar</span> ✎</button>
               <button aria-label="Deshacer la última estación" id="undo-button" class="text-button" type="button">↶ <span>Deshacer</span></button>
               <button aria-label="Vaciar la línea seleccionada" id="clear-button" class="text-button" type="button">× <span>Vaciar línea</span></button>
             </div>
@@ -277,7 +279,7 @@
             </div>
           </section>
 
-          <section class="traffic-card">
+          <section class="traffic-card"><div id="incident-panel" class="incident-panel" hidden><div class="panel-head"><strong id="incident-title" tabindex="-1"></strong><span id="incident-time"></span></div><p id="incident-copy"></p></div>
             <div id="challenge-panel" class="challenge-panel" hidden><div class="panel-head"><span class="eyebrow">RED CERTIFICADA</span><strong id="challenge-clock">Quedan 320 s</strong></div><p>Completa los tres objetivos antes del plazo. Pausa cuando quieras planificar.</p><ul><li data-challenge-goal></li><li data-challenge-goal></li><li data-challenge-goal></li></ul></div>
             <div class="panel-head"><span class="eyebrow">OBJETIVO DEL TURNO</span><span class="pulse-time">5 FASES</span></div>
             <div class="phase-panel"><div class="phase-heading"><span class="eyebrow">PROGRESO DEL TURNO</span><span id="phase-count">FASE 01 / 05</span></div><strong id="phase-name">Primeras conexiones</strong><div class="phase-track"><i id="phase-progress"></i></div><small id="phase-objective">Crea un servicio y transporta a cinco personas.</small><div class="mission-goal-row"><span id="phase-goal">Transporta 5 personas</span><span id="phase-state">EN CURSO</span></div><div class="mission-track"><i id="mission-progress-bar"></i></div><div class="mission-meta"><span id="mission-progress-label">0 / 5</span><span id="mission-reward">PREMIO +$8</span></div></div>
@@ -314,10 +316,11 @@
             <p id="station-advice">Selecciona una estación para ver su cola, sus conexiones y los destinos de sus pasajeros.</p>
             <p id="tip-text" class="station-event-note">Consejo: un buen transbordo puede ser más útil que tres líneas aisladas.</p>
           </section>
-          <footer class="side-footer"><span>CITYFLOW <b>0.22.0</b></span><span>CONSTRUYE · OBSERVA · PIENSA</span></footer>
+          <footer class="side-footer"><span>CITYFLOW <b>0.23.0</b></span><span>CONSTRUYE · OBSERVA · PIENSA</span></footer>
         </aside>
       </main>
-      <div class="bottom-credit"><span>UN JUEGO ORIGINAL DE ESTRATEGIA DE TRANSPORTE</span><span>PORT AZURE · VERSIÓN 0.22.0</span></div>
+      <button id="quick-pause" class="mobile-playback" type="button" hidden aria-pressed="false">Pausa para pensar</button>
+      <div class="bottom-credit"><span>UN JUEGO ORIGINAL DE ESTRATEGIA DE TRANSPORTE</span><span>PORT AZURE · VERSIÓN 0.23.0</span></div>
     </div>
     <script type="module" src="./boot.ts"></script>
   </body>

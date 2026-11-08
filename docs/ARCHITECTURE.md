@@ -190,3 +190,16 @@ Playback labels and aria-pressed now derive from actual pause/speed state, inclu
 El coordinador renderiza una vez al redimensionar el Canvas, además del ciclo normal, para no dejar un lienzo borrado esperando otro frame. Marcadores y fuentes tienen un tamaño visual mínimo. Las listas de recorrido se reconstruyen solo cuando cambia la topología, conservando el foco de los controles durante actualizaciones del HUD.
 
 La interfaz está traducida directamente en sus fuentes, sin observadores que reescriban el DOM ni dependencias de traducción. IDs de estaciones, modos, fases y almacenamiento siguen estables. Los atajos respetan campos de edición y el menú mantiene pausada la simulación.
+
+
+## v0.23 — borradores, incidencias e historial
+
+`RouteDraft` conserva una copia de la ruta original y solo permite estaciones habilitadas al abrir el borrador. No modifica el planificador ni la flota. `routeImpact` compara componentes conectados y comprueba destinos de pasajeros en espera y de la flota afectada que volverían a sus últimas paradas. La estimación no equivale a viajes futuros ni garantiza frecuencia. El coordinador pausa y bloquea la reproducción hasta aplicar o descartar, incluso al volver del menú.
+
+`NetworkCommands.replaceRoute` valida todos los IDs y su unicidad antes de mutar. Una ruta idéntica conserva el planificador y los trenes; una edición válida reconstruye una sola vez usando las reglas existentes de conservación y replanificación de pasajeros. La edición directa original permanece disponible.
+
+`operatingIncidents` deriva ventanas temporales y estación a partir del tiempo y la semilla del turno. `GameSimulation` aplica el factor de velocidad únicamente en tramos con un extremo en la estación afectada. Su getter opcional desactivado conserva las reglas anteriores. No sustituye los eventos de demanda ni el estadio. El aviso anticipado es presentación; no modifica la simulación. Las políticas de tren siguen adoptándose en estaciones.
+
+`runHistory` valida JSON, limita entrada y resultados, rechaza modos/desenlaces/números inválidos y reconstruye solo campos conocidos. El coordinador guarda resultados una vez al terminar, o al interrumpir explícitamente un turno con tiempo transcurrido. El historial no contiene una partida reanudable; fallar localStorage no impide jugar. El DOM presenta los datos mediante textContent. Las claves de récord distinguen incidencias sin alterar las antiguas claves sin ellas.
+
+El aviso de mapa abre la pestaña móvil del turno y enfoca su título. La pausa flotante comparte el mismo comando que teclado y barra superior. El HUD se actualiza inmediatamente al pausar para congelar contadores visibles con el motor; durante el juego conserva su frecuencia limitada.

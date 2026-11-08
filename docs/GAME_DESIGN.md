@@ -254,7 +254,7 @@ Loading starts at zero, shows real seconds and counts completed startup checks. 
 - [x] Optional timed victory scenario with tested victory, deadline and restart.
 - [x] Actual destination information and disconnected-passenger advice.
 - [ ] Keyboard/focus management for the final report and further screen-reader playtesting.
-- [ ] Persistent run history with completion reasons and scenario-specific records.
+- [x] Persistent run history with completion reasons and scenario-specific records (v0.23).
 - [ ] Extract the dynamic Canvas renderer and profile actual mobile hardware.
 - [ ] Human playtesting of the certification curve before additional scenarios/cities.
 
@@ -289,6 +289,27 @@ La ampliación de un andén da margen local y compite por fondos con un tren, un
 - [x] Inversión en andenes y presión coherente con el tamaño de estación.
 - [x] Media velocidad, atajos, etiquetas legibles y pausa segura en el menú.
 - [ ] Probar el equilibrio con personas: políticas, plazos y ritmo de expansión.
-- [ ] Historial persistente de partidas y escenarios adicionales.
+- [x] Historial persistente de partidas (v0.23).
+- [ ] Escenarios adicionales después de probar el equilibrio.
 - [ ] Separar el renderizador dinámico y perfilar móviles reales.
 - [ ] Campaña, desbloqueos permanentes y nuevas ciudades, sin anticiparlos en la interfaz.
+
+
+## v0.23 — decisiones con tiempo para pensar
+
+Planificar permite probar una alternativa sin reiniciar trenes durante cada toque. La vista previa expone alcance y pasajeros sin ruta; aplicar sigue teniendo el coste operativo de recolocar la flota editada según las reglas previas. No se descuentan fondos por dibujar y no se elimina a ningún pasajero. La pausa permanece después de aplicar para revisar transbordos antes de continuar.
+
+Las incidencias introducen una elección temporal entre reforzar una línea, mejorarla o desviar su trazado. No cierran estaciones ni crean nuevas derrotas. Se anuncian, duran poco y son opcionales en los modos tranquilos; Hora pico las incorpora como parte de su desafío. La estación rota con la semilla, pero el calendario es explícito y reproducible. No se promete que cada turno sea un escenario completamente nuevo.
+
+El historial ayuda a comparar modos y resultados sin progreso obligatorio. Las incidencias y la ciudad progresiva quedan identificadas para no mezclar récords de condiciones distintas.
+
+### Siguiente etapa
+
+- [x] Borrador reversible, comparación de conectividad y aplicación atómica.
+- [x] Incidencias anunciadas, opcionales y cubiertas por pruebas del motor.
+- [x] Historial local de ocho turnos con desenlace.
+- [x] Acceso móvil a pausa y avisos desde el mapa.
+- [ ] Pruebas con jugadores para equilibrar señales lentas, políticas y ritmo de crecimiento.
+- [ ] Extraer el renderizador dinámico y medir rendimiento/memoria en teléfonos reales.
+- [ ] Nuevos escenarios con objetivos propios, después de validar los actuales.
+- [ ] Guardado reanudable, campaña, ciudades y desbloqueos permanentes siguen pendientes.

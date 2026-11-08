@@ -28,6 +28,9 @@
     "src/simulation/serviceChallenge.ts",
     "src/simulation/operatingPolicies.ts",
     "src/simulation/stationCapacity.ts",
-    "src/simulation/cityGrowth.ts"
+    "src/simulation/cityGrowth.ts",
+    "src/simulation/routeDraft.ts",
+    "src/simulation/operatingIncidents.ts",
+    "src/runHistory.ts"
   ]
 }

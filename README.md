@@ -1,8 +1,17 @@
 # CITYFLOW
 
-A small, original urban-transit strategy game prototype. Build metro lines, connect stations, move passengers, manage capacity, and keep the network flowing.
+Un juego original de estrategia de transporte urbano: construye líneas, conecta barrios y adapta el servicio a la demanda de Port Azure.
 
-## Versión actual — 0.22.0 · Una ciudad que crece contigo
+## Versión actual — 0.23.0 · Planificar, anticipar y aprender
+
+- **Planificar:** el botón de lápiz detiene el tiempo y permite ensayar una ruta discontinua. Compara la mayor red conectada y cuántas personas quedarían sin camino. Aplicar cambia la ruta una sola vez; Descartar o Escape conserva la original. Ambas acciones mantienen la pausa. La edición directa sigue disponible.
+- **Incidencias anunciadas:** opcionales desde el menú, activadas siempre en Hora pico. Una señal lenta se anuncia con 15 segundos de anticipación, dura 30 y reduce al 65% la velocidad de los tramos que tocan la estación indicada. Puedes reforzar o desviar el servicio. La primera comienza a los 100 segundos de simulación y se repite cada 120; pausar también detiene estos plazos. Urbano y tranquilo empiezan sin incidencias; sus récords se separan cuando las activas.
+- **Controles móviles:** aviso junto al mapa que abre los detalles del incidente y botón flotante para pausar o continuar desde cualquier panel.
+- **Últimos turnos:** el menú guarda hasta ocho resultados en este navegador, con viajes, duración de simulación, contratos y motivo de finalización. Incluye turnos interrumpidos al elegir otro modo. Es un resumen local; la partida en curso todavía no se guarda.
+
+Jugar: https://gomeza2.github.io/metro/ · [Validación de esta versión](docs/QA_0.23.md)
+
+## Una ciudad que crece contigo
 
 CITYFLOW está en español: menú, estaciones, tutorial, fases, contratos, eventos, controles y reportes.
 
@@ -34,7 +43,7 @@ El tutorial se integra a la partida: conectar, observar una entrega, pausar e in
 
 Se conservan los cinco modos, las cinco fases, los transbordos, los contratos, el estadio, la certificación, la música opcional y el acceso directo. Ambos modos de publicación de Pages siguen soportados: Actions usa `dist/`; `main / root` sirve el HTML y los recursos compilados incluidos en la raíz.
 
-Jugar: https://gomeza2.github.io/metro/ · [Validación de esta versión](docs/QA_0.22.md)
+[Validación de la etapa de crecimiento](docs/QA_0.22.md)
 
 ## Run locally
 

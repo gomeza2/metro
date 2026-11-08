@@ -27,6 +27,15 @@ export class NetworkCommands {
     return index >= 0 ? 'trimmed' : 'extended';
   }
 
+  replaceRoute(lineId: number, route: readonly string[]): RouteEditResult {
+    const line = this.lines.find(item => item.id === lineId);
+    if (!line || new Set(route).size !== route.length || route.some(id => !this.stationById.has(id) || this.stationById.get(id)?.active === false)) return 'invalid';
+    if (line.stations.join('\0') === route.join('\0')) return 'unchanged';
+    line.stations = [...route];
+    this.rebuild(line);
+    return 'extended';
+  }
+
   undo(lineId: number): boolean {
     const line = this.lines.find(item => item.id === lineId);
     if (!line?.stations.length) return false;

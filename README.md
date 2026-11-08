@@ -2,9 +2,9 @@
 
 A small, original urban-transit strategy game prototype. Build metro lines, connect stations, move passengers, manage capacity, and keep the network flowing.
 
-## Current release — v0.15.0
+## Current release — v0.16.0
 
-The current build focuses on clarity and playability: a redesigned high-contrast interface, a cleaner Port Azure city map, station labels positioned to avoid collisions, a matching menu-map preview, and simpler first-route instructions. The static passenger-demand illustration was removed so the interface only presents gameplay information that is actually connected to the simulation.
+The current build separates gameplay updates from the browser interface and focuses on clarity and playability: a redesigned high-contrast interface, a cleaner Port Azure city map, station labels positioned to avoid collisions, a matching menu-map preview, and simpler first-route instructions. The static passenger-demand illustration was removed so the interface only presents gameplay information that is actually connected to the simulation.
 
 Play the published build: https://gomeza2.github.io/metro/
 
@@ -62,7 +62,9 @@ The project deliberately starts without accounts, a backend, or external music s
 ## Project structure
 
 - `src/boot.ts`: startup progress and loading error recovery.
-- `src/main.ts`: simulation, rendering, input, and audio.
+- `src/main.ts`: browser presentation, rendering, input, audio and simulation wiring.
+- `src/simulation/gameSimulation.ts`: DOM-free gameplay updates for passengers, trains, boarding, transfers, rewards and station pressure.
+- `src/simulation/gameTypes.ts`: shared simulation entity types.
 - `src/visuals.ts`: city scenery and map landmarks.
 - `src/style.css`: game interface, loading screen, and responsive layout.
 - `index.html`: accessible application shell.

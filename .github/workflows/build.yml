@@ -25,3 +25,5 @@ jobs:
         run: npm test
       - name: Type-check and build
         run: npm run build
+      - name: Verify committed main/root site
+        run: node scripts/verify-build.mjs --root

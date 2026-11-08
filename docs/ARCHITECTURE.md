@@ -164,3 +164,14 @@ Startup now reports completed checks instead of an asymptotic estimated percenta
 `serviceChallengeStatus` derives certification progress from elapsed simulation time, deliveries, largest connected component and completed grants. All objectives must hold simultaneously before the exclusive 320-second deadline. It adds no persistent mutable counters. The browser composition ends only the challenge mode on success/deadline; original modes retain their overload behavior. Outcome presentation freezes the simulation and disables playback until restart. Certification records use the existing mode-specific score key.
 
 Coverage calculation is shared by grants and certification. The inspector summarizes actual queued destinations, including a notice when a topology edit leaves riders without a path. Full renderer extraction and persistent run history remain separate future work.
+
+
+## v0.21 — direct entry and both Pages publication modes
+
+Supersedes the startup gates described in earlier release notes. There is no loading overlay or hard startup deadline. The static menu is immediately available; `boot.ts` only connects its controls. Missing scripts produce an inline retry, and a late module can still complete automatically after the six-second informational notice. CSS loads through normal stylesheets. It is not polled or treated as a gate for module initialization.
+
+Editable HTML moved to `src/index.html`; Vite now serves `src` and builds to `dist`. Root `index.html` and `assets/` are explicitly generated with `npm run publish:root` and committed for GitHub Pages main/root. This supports branch-based publication without serving raw TypeScript. `.nojekyll` keeps the root publication static. Actions still builds and deploys `dist` as before. The synchronization command is explicit so a normal build does not overwrite tracked root files during environment setup. CI verifies the committed root entry and asset/version consistency; AGENTS.md instructs future edits to refresh the root publication.
+
+Entry checks run on both plain-static routes. Delaying either entry or engine beyond 20 seconds cannot lock out the menu, and releasing the resource enables Start without a reload. The game still uses a real ready signal to enable controls; it never advertises an uninitialized engine as playable.
+
+Playback labels and aria-pressed now derive from actual pause/speed state, including resume from the main menu. Starting moves keyboard focus to map controls; a final report is a labelled region and focuses its restart action. Further screen-reader and real-device usability testing remains outstanding.

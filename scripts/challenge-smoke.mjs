@@ -17,7 +17,7 @@ try{
       window.requestAnimationFrame=callback=>window.setTimeout(()=>callback(performance.now()),50);
       window.cancelAnimationFrame=id=>clearTimeout(id);
     });
-    await page.goto(base);await page.waitForSelector('#loading-screen',{state:'detached'});
+    await page.goto(base);await page.waitForSelector('#start-game:not([disabled])');
     await page.selectOption('#service-plan','challenge');await page.click('#start-game');
     assert.equal(await page.locator('#credits').textContent(),'$32');assert.equal(await page.locator('#challenge-panel').isVisible(),true);
     const connect=async id=>{await page.selectOption('#station-access',id);await page.click('#station-connect');};

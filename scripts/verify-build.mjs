@@ -4,8 +4,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const distRoot = resolve(projectRoot, 'dist');
+const distRoot = process.argv.includes('--root') ? projectRoot : resolve(projectRoot, 'dist');
 const html = await readFile(resolve(distRoot, 'index.html'), 'utf8');
+assert.ok(!html.includes('id="loading-screen"'), 'The production entry must open the menu without a blocking loader');
+assert.ok(!html.includes('media="print"'), 'Game CSS must load normally without onload/media gating');
 
 function readAssetPath(tag, attribute, label) {
   assert.ok(tag, 'dist/index.html must include a compiled ' + label + ' asset');

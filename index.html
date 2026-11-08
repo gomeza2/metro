@@ -3,56 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="cityflow-version" content="0.20.0" />
+    <meta name="cityflow-version" content="0.21.0" />
     <meta name="theme-color" content="#0b1716" />
     <meta name="description" content="CITYFLOW — a calm, challenging urban transit strategy game." />
     <title>CITYFLOW — Urban Transit Strategy</title>
     <script>
-      // Independent of the module bundle: recovery also works when boot.js never loads.
+      // The menu is always visible. Late resources never lock it behind a timer.
       (() => {
         const root = document.documentElement;
         root.dataset.cityflowStartup = 'waiting';
-        const startedAt = performance.now();
-        const updateElapsed = () => {
-          const seconds = ((performance.now() - startedAt) / 1000).toFixed(1);
-          const elapsed = document.querySelector('#loading-elapsed');
-          if (elapsed) elapsed.textContent = `${seconds}s elapsed`;
-          return seconds;
+        let styleFailed = false;
+        const update = (message, failed) => {
+          const status = document.querySelector('#startup-status');
+          if (status) status.textContent = message;
+          const retry = document.querySelector('#startup-retry');
+          if (retry) retry.hidden = !failed;
         };
-        const ticker = setInterval(updateElapsed, 100);
-        const stopClock = () => { clearInterval(ticker); return updateElapsed(); };
-        const fail = (message) => {
-          if (['ready', 'failed'].includes(root.dataset.cityflowStartup)) return;
+        const notice = setTimeout(() => {
+          if (root.dataset.cityflowStartup !== 'ready' && root.dataset.cityflowStartup !== 'failed') {
+            update('The menu is ready. Game controls are still connecting; you can choose a service plan while you wait.', true);
+          }
+        }, 6000);
+        window.addEventListener('cityflow:startup-failed', () => {
+          clearTimeout(notice);
           root.dataset.cityflowStartup = 'failed';
-          clearTimeout(deadline);
-          stopClock();
-          const screen = document.querySelector('#loading-screen');
-          if (screen) { screen.classList.add('has-error'); screen.setAttribute('aria-busy', 'false'); }
-          document.querySelector('#app')?.setAttribute('aria-busy', 'false');
-          const label = document.querySelector('#loading-status');
-          if (label) label.textContent = 'The city could not start';
-          const error = document.querySelector('#loading-error');
-          if (error) { error.hidden = false; error.textContent = message; }
-          const retry = document.querySelector('#loading-retry');
-          if (retry) { retry.hidden = false; retry.focus(); }
-          document.querySelector('#loading-progress')?.removeAttribute('aria-valuenow');
-          window.dispatchEvent(new Event('cityflow:startup-stopped'));
-        };
-        const deadline = setTimeout(() => fail('Loading took too long. Check your connection, then reload the latest build.'), 20000);
-        window.addEventListener('cityflow:startup-failed', (event) => fail(event.detail || 'Game assets could not load. Check your connection and reload the latest build.'));
+          update('Game controls could not load. Reload the latest build to try again.', true);
+        });
         window.addEventListener('cityflow:startup-complete', () => {
-          if (root.dataset.cityflowStartup === 'failed') return;
-          clearTimeout(deadline);
+          clearTimeout(notice);
           root.dataset.cityflowStartup = 'ready';
-          const duration = stopClock();
-          root.dataset.cityflowLoadSeconds = duration;
-          const summary = document.querySelector('#startup-duration');
-          if (summary) summary.textContent = `Ready in ${duration}s`;
-          document.querySelector('#app')?.setAttribute('aria-busy', 'false');
-          document.querySelector('#main-menu')?.removeAttribute('inert');
-        }, { once: true });
-        document.addEventListener('click', (event) => {
-          if (!(event.target instanceof Element) || !event.target.closest('#loading-retry')) return;
+          update(styleFailed ? 'Game controls are ready, but the interface styles could not load. Reload for the full layout.' : 'Ready to play. Choose your service plan and start a shift.', styleFailed);
+          document.querySelector('#start-game').disabled = false;
+          document.querySelector('#menu-sound-button').disabled = false;
+        }, { once:true });
+        window.addEventListener('error', event => {
+          if (event.target instanceof HTMLLinkElement && event.target.rel === 'stylesheet') {
+            styleFailed = true;
+            update('Interface styles could not load. Controls are connecting; reload for the full layout.', true);
+          }
+          if (root.dataset.cityflowStartup !== 'ready' && event.target instanceof HTMLScriptElement) {
+            window.dispatchEvent(new Event('cityflow:startup-failed'));
+          }
+        }, true);
+        document.addEventListener('click', event => {
+          if (!(event.target instanceof Element) || !event.target.closest('#startup-retry')) return;
           const url = new URL(location.href);
           url.searchParams.set('cityflow_reload', String(Date.now()));
           location.replace(url.href);
@@ -60,71 +54,35 @@
       })();
     </script>
     <style>
-      /* Critical recovery UI must not depend on a successful CSS download. */
-      #loading-screen { position:fixed; inset:0; z-index:10000; display:grid; place-items:center; overflow:auto; background:#101e26; color:#f4f2e8; font:16px/1.5 system-ui,sans-serif; padding:20px; }
-      #loading-screen .loading-card { box-sizing:border-box; width:min(100%,460px); padding:28px; border:1px solid #526870; border-radius:16px; background:#192b34; color:#f4f2e8; }
-      #loading-screen h1 { color:inherit; font-size:28px; line-height:1.15; }
-      #loading-screen .loading-copy, #loading-screen .loading-kicker { color:#c3d4dc; }
-      #loading-screen button { min-height:48px; padding:12px 20px; border:1px solid #c2d6b5; border-radius:8px; background:#b7d4a5; color:#193529; font:600 15px system-ui,sans-serif; cursor:pointer; }
-      #loading-screen button:focus-visible { outline:3px solid #f4f2e8; outline-offset:4px; }
-      #loading-screen [hidden] { display:none; }
-      #loading-screen.is-hidden { display:none; }
-      #loading-screen.has-error .loading-track { opacity:.35; }
-      #loading-screen .loading-brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.1em; }
-      #loading-screen .loading-version { margin-left:auto; font-size:12px; font-weight:400; }
-      #loading-screen .loading-progress-meta, #loading-screen .loading-timing { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:12px; }
-      #loading-screen .loading-track { height:8px; overflow:hidden; border-radius:8px; background:#3b5058; margin:10px 0; }
-      #loading-screen .loading-track i { display:block; width:0%; height:100%; background:#b7d4a5; border-radius:inherit; }
-      #loading-screen .loading-footer { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; margin-top:24px; font-size:9px; color:#afc4cc; }
-      #loading-screen .loading-error { color:#ffc4aa; font-size:14px; line-height:1.6; }
+      /* Keep the direct menu and retry readable if CSS cannot be fetched. */
+      body { margin:0; font:16px/1.5 system-ui,sans-serif; background:#101e26; color:#f4f2e8; }
+      .startup-notice { padding:12px 16px; border:1px solid #526870; border-radius:8px; margin:12px 0; }
+      .startup-notice button { padding:10px 16px; cursor:pointer; }
+      [hidden] { display:none !important; }
     </style>
-    <link rel="stylesheet" href="./src/style.css" media="print" onload="this.media='all';this.dataset.loaded='true'" onerror="this.dataset.failed='true'" />
-    <link rel="stylesheet" href="./src/command.css" media="print" onload="this.media='all';this.dataset.loaded='true'" onerror="this.dataset.failed='true'" />
+    <script type="module" crossorigin src="./assets/index-C0gNR9k2.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BckhMpXI.css">
   </head>
   <body class="menu-active">
-    <div id="app" aria-busy="true">
+    <div id="app">
 
-      <section id="loading-screen" class="loading-screen" aria-busy="true" aria-label="Loading CITYFLOW">
-        <div class="loading-card">
-          <div class="loading-brand">
-            <span class="brand-mark"><i></i><i></i><i></i></span>
-            <span>CITYFLOW</span>
-            <span class="loading-version">0.20</span>
-          </div>
-          <p class="loading-kicker">PORT AZURE · TRANSIT CONTROL</p>
-          <h1>Preparing your city<span>.</span></h1>
-          <p class="loading-copy">Three startup checks. The clock shows real elapsed time, not a download estimate.</p>
-          <div class="loading-progress-meta">
-            <span id="loading-status" role="status" aria-live="polite">Waiting for the interface</span>
-            <strong id="loading-percent">0%</strong>
-          </div>
-          <div id="loading-progress" class="loading-track" role="progressbar" aria-label="Startup checks completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 of 3 startup checks complete">
-            <i id="loading-bar"></i>
-          </div>
-          <div class="loading-timing"><span id="loading-elapsed" aria-live="off">0.0s elapsed</span><span id="loading-checks">0 / 3 checks</span></div>
-          <p id="loading-slow" class="loading-slow">The counter keeps running while resources load. Slow connections can take longer.</p>
-          <p id="loading-error" role="alert" class="loading-error" hidden>City startup was interrupted. Please try again.</p>
-          <button id="loading-retry" class="loading-retry" type="button" hidden>Reload game</button>
-          <noscript><p>JavaScript is required to play CITYFLOW. Enable it and reload this page.</p><style>.loading-progress-meta,.loading-track,.loading-copy,.loading-footer,.loading-timing,.loading-slow { display:none !important; }</style></noscript>
-          <div class="loading-footer"><span>BUILT FOR CLEAR THINKING</span><span>INITIALISING SYSTEMS</span></div>
-        </div>
-      </section>
-
-      <section id="main-menu" inert class="main-menu" aria-label="CITYFLOW main menu" aria-hidden="false">
+      <section id="main-menu" class="main-menu" aria-label="CITYFLOW main menu" aria-hidden="false">
         <div class="menu-shell">
           <nav class="menu-nav" aria-label="Main navigation">
             <a class="menu-brand" href="#" aria-label="CITYFLOW home">
               <span class="brand-mark"><i></i><i></i><i></i></span>
               <span>CITYFLOW</span>
-              <span class="menu-version">0.20</span><span id="startup-duration" class="startup-duration" role="status"></span>
+              <span class="menu-version">0.21</span>
             </a>
             <div class="menu-nav-meta">
               <span class="menu-online"><i></i> PLAYABLE CITY SIMULATOR</span>
               <a class="spotify-link menu-spotify-link" href="https://open.spotify.com/search/electronic%20instrumental%20gaming%20music" target="_blank" rel="noopener noreferrer" aria-label="Find instrumental game music on Spotify">♫ <span>Spotify mix</span></a>
-              <button id="menu-sound-button" class="menu-sound" type="button" aria-label="Toggle original ambient soundtrack">♫ <span>Sound off</span></button>
+              <button disabled id="menu-sound-button" class="menu-sound" type="button" aria-label="Toggle original ambient soundtrack">♫ <span>Sound off</span></button>
             </div>
           </nav>
 
+          <div class="startup-notice"><span id="startup-status" role="status">Choose your service plan. Connecting game controls…</span><button id="startup-retry" type="button" hidden>Reload latest build</button></div>
+          <noscript><p>JavaScript is required to play CITYFLOW. Enable it and reload this page.</p></noscript>
           <div class="menu-hero">
             <div class="menu-copy">
               <p class="menu-kicker"><span></span> THE CITY IS YOURS TO CONNECT</p>
@@ -132,7 +90,7 @@
               <p class="menu-lead">Start with two stations, learn how demand moves, then adapt your lines as the city enters new phases. Every shift brings a different problem to solve.</p>
               <div class="service-plan-picker"><label for="service-plan">YOUR SERVICE PLAN</label><select id="service-plan"><option value="standard">City shift · original challenge</option><option value="relaxed">Gentle shift · learn at your pace</option><option value="rush">Rush hour · expert pressure</option><option value="challenge">Network certification · timed challenge</option><option value="sandbox">Free build · no overload defeat</option></select><p id="service-plan-description">The original five-phase shift. Build, adapt and survive.</p></div>
               <div class="menu-actions">
-                <button id="start-game" class="menu-play-button" type="button">
+                <button disabled id="start-game" class="menu-play-button" type="button">
                   <span class="play-icon">▶</span>
                   <span><b>Start first shift</b><small>The clock starts after your first route</small></span>
                   <span class="play-arrow">↗</span>
@@ -183,7 +141,7 @@
               <article><span>05 · 15:30+</span><b>Afternoon &amp; evening commute</b><small>Balance the growing commute and city demand.</small></article>
             </div>
           </section>
-          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.20.0</span></footer>
+          <footer class="menu-footer"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.21.0</span></footer>
         </div>
       </section>
 
@@ -233,7 +191,7 @@
                 <span><strong>Start your first line</strong><small>Choose a line color below, then click two station markers to start your first train.</small></span>
                 <button id="dismiss-hint" type="button" aria-label="Dismiss hint">×</button>
               </div>
-              <div id="game-over" class="game-over hidden">
+              <div id="game-over" class="game-over hidden" role="region" aria-labelledby="report-heading">
                 <div class="game-over-card">
                   <span class="eyebrow">CITYFLOW · <span id="report-outcome">SHIFT REPORT</span></span>
                   <h2 id="report-heading">The network<br/><em>needs a rethink.</em></h2>
@@ -351,11 +309,10 @@
             <p id="station-advice">Click any station on the map to inspect its passenger queue, serving lines, and local demand.</p>
             <p id="tip-text" class="station-event-note">Tip: one well-connected interchange can be more useful than three isolated lines.</p>
           </section>
-          <footer class="side-footer"><span>CITYFLOW <b>0.20.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
+          <footer class="side-footer"><span>CITYFLOW <b>0.21.0</b></span><span>BUILT FOR CLEAR THINKING</span></footer>
         </aside>
       </main>
-      <div class="bottom-credit"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.20.0</span></div>
+      <div class="bottom-credit"><span>AN ORIGINAL TRANSIT STRATEGY GAME</span><span>PORT AZURE · BUILD 0.21.0</span></div>
     </div>
-    <script type="module" src="./src/boot.ts"></script>
   </body>
 </html>

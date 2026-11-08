@@ -110,3 +110,5 @@ select:focus-visible{outline:3px solid #b7d4a5;outline-offset:3px;}
 .challenge-panel .panel-head { gap:8px; }.challenge-panel strong{font:12px var(--mono);color:#e7bd75;white-space:nowrap;}
 .challenge-panel p,.challenge-panel li { font-size:12px;line-height:1.6; }.challenge-panel p { color:#bdcfd3; }.challenge-panel ul { padding:0;list-style:none;display:grid;gap:8px; }.challenge-panel li { color:#e4e6d7; }.challenge-panel .is-complete{color:#b7d4a5;}
 .station-destinations { padding:10px 12px;background:#b7d4a50d;border-left:2px solid #b7d4a5;border-radius:0 6px 6px 0;color:#cedddc;font-size:12px;line-height:1.6; }
+.startup-notice { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin:14px 0 0; padding:10px 14px; background:#b7d4a50a; border:1px solid #3b535b; border-radius:8px; color:#c6d9d9; font-size:12px; line-height:1.5; }
+.startup-notice button { background:#b7d4a5; color:#193529; border:0; border-radius:6px; min-height:42px; padding:8px 12px; font-weight:600; }

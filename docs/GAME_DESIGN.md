@@ -259,3 +259,12 @@ Loading starts at zero, shows real seconds and counts completed startup checks. 
 - [ ] Human playtesting of the certification curve before additional scenarios/cities.
 
 A campaign, permanent unlocks, daily challenges and additional cities are still future work.
+
+
+## v0.21 — enter first, connect controls without a blocking screen
+
+The user reported repeated 20-second startup failures and explicitly requested entry without a loading screen. The menu now appears immediately. The sole temporary restriction is the Start button while controls initialize; late downloads recover automatically. Failures stay within an inline notice with Retry, preserving the menu and service-plan explanations.
+
+Publication now supports main/root directly with compiled assets, as well as the Actions build. The entry gate is not reintroduced as a timer, progress animation or stylesheet readiness condition.
+
+Following the accessibility milestone, keyboard focus now moves into map controls on start and to Restart on a final report; playback labels and pressed states match the actual simulation state after returning from the menu. Persistent run history, full rendering extraction and human balancing remain next.

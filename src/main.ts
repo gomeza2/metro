@@ -215,6 +215,7 @@ function finishRun(success: boolean, copy: string): void {
   $('#final-phases').textContent = `${completedPhaseObjectives.size} / 5`;
   $('#record-state').textContent = newRecord ? 'NEW PERSONAL BEST' : `PERSONAL BEST · ${String(bestScore).padStart(3, '0')}`;
   $('#game-over').classList.remove('hidden');
+  $('#restart-button').focus();
   $('#pause-button').innerHTML = '<span>▶</span> Resume';
   $('#map-status').textContent = success ? 'NETWORK CERTIFIED · CHALLENGE COMPLETE' : 'SHIFT ENDED · REVIEW YOUR NETWORK';
   updateHUD();
@@ -632,8 +633,9 @@ function updateCityEvent(): void {
 function updateHUD(): void {
   $('.status-pill').innerHTML = `<i></i> ${runResult === 'won' ? 'CERTIFIED' : runResult === 'lost' ? 'ENDED' : paused ? 'PAUSED' : 'OPERATING'}`;
   $<HTMLButtonElement>('#pause-button').disabled = gameOver;
-  document.querySelectorAll<HTMLButtonElement>('.speed-button').forEach(button => { button.disabled = gameOver; });
-  if (gameOver) $('#pause-button').textContent = 'Finished';
+  document.querySelectorAll<HTMLButtonElement>('.speed-button').forEach(button => { button.disabled = gameOver; button.setAttribute('aria-pressed', String(Number(button.dataset.speed) === simulationSpeed)); });
+  $('#pause-button').innerHTML = gameOver ? 'Finished' : paused ? '<span aria-hidden="true">▶</span> Resume' : '<span aria-hidden="true">II</span> Pause';
+  $('#pause-button').setAttribute('aria-pressed', String(paused));
   $('#network-summary').textContent = `$${simulationState.credits} funds · ${simulationState.score} delivered · ${totalWaiting()} waiting`;
   updateContracts();
   updateChallenge();
@@ -764,6 +766,7 @@ function startGame(): void {
   $('#map-status').textContent = 'CLOCK ON HOLD · CONNECT TWO STATIONS TO START THE SHIFT';
   lastFrame = 0;
   updateHUD();
+  $('#map-mode-button').focus();
 }
 
 function openMainMenu(): void {

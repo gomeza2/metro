@@ -2,9 +2,11 @@
 
 A small, original urban-transit strategy game prototype. Build metro lines, connect stations, move passengers, manage capacity, and keep the network flowing.
 
-## Current release — v0.20.0 · Live startup and network certification
+## Current release — v0.21.0 · Direct entry and main/root publishing
 
-Startup now begins at 0% and 0.0 seconds. Progress counts three real checks (interface, engine, city readiness), while a live clock reports actual elapsed time. There is no forced minimum loading delay; the menu retains the completed duration. CSS loads without blocking the critical loading card. Recovery works even if the entry JavaScript is missing. A 20-second deadline prevents indefinite loading; retry requests fresh HTML, and late engine responses cannot dismiss a failed startup. The loading card remains readable without external CSS, keeps the menu inaccessible until ready and explains when JavaScript is disabled.
+The game opens directly on the menu. There is no blocking loading screen, progress gate or 20-second failure lock. If a script takes time, the menu stays visible and the Start button becomes available automatically when controls connect. A failed script offers an inline retry.
+
+Both GitHub Pages publication modes are supported: Actions deploys `dist/`, while branch-based `main / root` serves the committed compiled `index.html` and `assets/`. Application HTML source is now `src/index.html`; browsers are never asked to execute source TypeScript in the root site.
 
 Route edits, fleet dispatch and network reset now run through tested engine commands. Selecting an existing endpoint keeps the fleet moving. Passengers on other lines replan at their next arrival; a removed transfer leaves them waiting for reconnection instead of creating false deliveries.
 
@@ -17,7 +19,7 @@ A map-led operations desk with larger type, readable touch controls, mobile pane
 - Optional city grants: ten new deliveries, eight stations in one connected network or a three-line interchange. Accept one at a time; complete it before its simulation-time deadline for funds. Each grant allows one attempt per shift; restarting restores the offers.
 - Seeded museum, harbor and university events redirect connected passenger demand. An advance notice and map ring identify the affected district. The existing stadium phases keep their own time window.
 - Ranked best scores are separate for each difficulty; the original standard score is preserved. Free build is unranked. Audio and Spotify remain optional.
-- Missing CSS produces a readable recovery screen instead of starting an unstyled game. Production output includes the exact package version and verified relative asset paths.
+- Missing CSS produces an inline retry notice; it cannot lock the game behind a loading screen. Production output includes the exact package version and verified relative asset paths.
 
 Play the published build: https://gomeza2.github.io/metro/ (publication may lag this branch).
 
@@ -41,7 +43,16 @@ npm run preview
 
 ## Publish with GitHub Pages
 
-In repository Settings → Pages, set the build and deployment source to **GitHub Actions**. The `.github/workflows/deploy.yml` workflow then builds the Vite app and publishes the compiled `dist/` directory on each push to `main`.
+For **GitHub Actions**, `.github/workflows/deploy.yml` builds the source and publishes `dist/` on pushes to `main`.
+
+For **Deploy from a branch → main → / (root)**, the repository root already contains the compiled site and `.nojekyll`. After changing application source, synchronize the committed static site before delivery:
+
+```bash
+npm test
+npm run publish:root
+```
+
+Commit the changed source together with root `index.html` and generated `assets/`. Normal `npm run build` only writes `dist/`. Do not edit generated root HTML/JS by hand. `AGENTS.md` records this workflow, and CI checks that root assets exist, are relative and match the package version.
 
 ## Prototype controls
 
@@ -81,15 +92,15 @@ npm install --prefix /tmp/cityflow-qa-tools --no-save --package-lock=false playw
 PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/browser-smoke.mjs
 ```
 
-Start Vite before that command. Pass a different base URL as the first argument to test a static build served under `/metro/`. The check covers four viewports, asset responses, real canvas taps, grants, purchases, inspection, zoom/pan, DPR, restart and CSS failure recovery. Screenshots default to `/tmp/cityflow-qa`. See [latest QA notes](docs/QA_0.20.md) for observed results and limits.
+Start Vite before that command. Pass a different base URL as the first argument to test a static build served under `/metro/`. The check covers four viewports, asset responses, real canvas taps, grants, purchases, inspection, zoom/pan, DPR, restart and CSS failure recovery. Screenshots default to `/tmp/cityflow-qa`. See [latest QA notes](docs/QA_0.21.md) for observed results and limits.
 
 The startup failure suite targets a production build served under `/metro/`:
 
 ```bash
-PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/loading-smoke.mjs http://127.0.0.1:4173/metro/
+PLAYWRIGHT_MODULE=/tmp/cityflow-qa-tools/node_modules/playwright-core/index.mjs node scripts/startup-smoke.mjs http://127.0.0.1:4173/metro/
 ```
 
-It tests an exact zero start, a live elapsed clock, reset on fresh navigation, immediate readiness without an artificial delay, slow/cached startup, missing entry/module/CSS, delayed CSS, the real timeout, late responses, retry and JavaScript-disabled messaging.
+It tests direct menu entry at four sizes, scripts delayed beyond 20 seconds with automatic recovery, missing scripts/styles and retry. Run it against both the Actions build and the committed repository root with a plain static HTTP server.
 
 The certification browser scenario plays through both outcomes using actual UI controls and a virtual clock:
 
@@ -115,7 +126,8 @@ Its deterministic demand is test-only. Live games retain randomized passenger se
 - `src/simulation/serviceContracts.ts`: optional grants, progress, deadlines and one-time rewards.
 - `src/visuals.ts`: city scenery and map landmarks.
 - `src/style.css`: game interface, loading screen, and responsive layout.
-- `index.html`: accessible application shell.
+- `src/index.html`: editable accessible application shell.
+- Root `index.html` and `assets/`: generated static site for branch-based Pages; refresh with `npm run publish:root`.
 - `docs/GAME_DESIGN.md`: product direction and development roadmap.
 
 ## Design principles

@@ -16,13 +16,15 @@ try {
     page.on('pageerror', error => errors.push(error.message));
     page.on('response', response => { if(response.status() >= 400) failures.push(`${response.status()} ${response.url()}`); });
     assert.equal((await page.goto(base)).status(), 200);
-    await page.waitForSelector('#loading-screen', { state: 'detached' });
+    assert.equal(await page.locator('#loading-screen').count(),0);
+    await page.waitForSelector('#start-game:not([disabled])');
     assert.equal(await page.locator('meta[name="cityflow-version"]').getAttribute('content'), packageVersion);
     assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--cityflow-ui-ready').trim()), '1');
     await page.screenshot({ path: `${output}/${name}-menu.png`, fullPage: false });
     await page.selectOption('#service-plan', 'sandbox');
     await page.click('#start-game');
     await page.waitForFunction(() => getComputedStyle(document.querySelector('#main-menu')).visibility === 'hidden');
+    assert.equal(await page.evaluate(()=>document.activeElement.id),'map-mode-button');
     assert.equal(await page.locator('#credits').textContent(), '$150');
     assert.equal(await page.locator('#best-score').textContent(), 'FREE');
     // Real canvas taps, including letterboxing in portrait layouts.
@@ -35,6 +37,10 @@ try {
     await page.click('#dismiss-hint');
     await tap(420,130); await tap(530,285);
     await page.waitForFunction(() => document.querySelector('[data-line="0"]').textContent.includes('2'));
+    await page.click('#pause-button');
+    await page.click('.brand');await page.click('#start-game');
+    assert.match(await page.locator('#pause-button').textContent(),/Pause/);
+    assert.equal(await page.locator('#pause-button').getAttribute('aria-pressed'),'false');
     await page.click('#pause-button');
     // Keyboard-accessible selection, transfer network, contract reward.
     if (width <= 620) await page.click('[data-panel="station"]');
@@ -74,12 +80,4 @@ try {
     console.log(`${name}: assets, gameplay, grants, economy, zoom/pan, DPR, restart passed`);
     await page.close();
   }
-  // A deliberately missing stylesheet must expose recovery and never start the game.
-  const page = await browser.newPage();
-  await page.route('**/*.css', route => route.abort());
-  await page.goto(base);
-  await page.waitForFunction(()=>document.querySelector('#loading-screen').classList.contains('has-error'));
-  assert.equal(await page.locator('#loading-retry').isVisible(),true);
-  console.log('Missing CSS: readable recovery passed');
-  await page.close();
 } finally { await browser.close(); }

@@ -1,13 +1,14 @@
 {
   "name": "cityflow",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/verify-build.mjs",
     "preview": "vite preview",
-    "test": "tsc -p tsconfig.tests.json && node --test test/*.test.mjs"
+    "test": "tsc -p tsconfig.tests.json && node --test test/*.test.mjs",
+    "publish:root": "npm run build && node scripts/publish-root.mjs && node scripts/verify-build.mjs --root"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

@@ -14,8 +14,8 @@ function readAssetPath(tag, attribute, label) {
   return match[1];
 }
 
-const stylesheetTag = html.match(/<link[^>]*\.css[^>]*>/i);
-const scriptTag = html.match(/<script[^>]*\.js[^>]*>/i);
+const stylesheetTag = /<link[^>]*\.css[^>]*>/i.exec(html)?.[0] ?? null;
+const scriptTag = /<script[^>]*\.js[^>]*>/i.exec(html)?.[0] ?? null;
 const stylesheetPath = readAssetPath(stylesheetTag, 'href', 'CSS stylesheet');
 const scriptPath = readAssetPath(scriptTag, 'src', 'JavaScript entry');
 

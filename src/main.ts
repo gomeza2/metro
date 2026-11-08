@@ -1,4 +1,3 @@
-import './style.css';
 import { FixedStepClock } from './simulation/fixedStepClock';
 import { drawCityOverlay } from './visuals';
 import { createRoutePlanner } from './simulation/pathfinding';
